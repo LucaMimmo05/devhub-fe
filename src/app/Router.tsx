@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import { createBrowserRouter } from "react-router-dom";
 import AppLayout from "@/layouts/AppLayout";
 import Dashboard from "@/pages/Dashboard/Dashboard";
@@ -8,65 +7,67 @@ import Tasks from "@/pages/Tasks/Tasks";
 import Notes from "@/pages/Notes/Notes";
 import Commands from "@/pages/Commands/Commands";
 import Settings from "@/pages/Settings/Settings";
+import PrivateRoute from "@/utils/PrivateRoute";
 
 
 
-type AppRoutes = {
-    path: string;
-    label: string;
-    element: ReactNode;
-};
-
- const routes: AppRoutes[] = [
-    {
+const Router = createBrowserRouter([
+  {
+    element: <AppLayout />,
+    children: [
+      {
         path: "/",
-        label: "Dashboard",
-        element: <Dashboard />,
-    },
-    {
-        path: "/auth",
-        label: "Authentication",
-        element: <Authentication />,
-    },
-    {
+        element: (
+          <PrivateRoute>
+            <Dashboard />
+          </PrivateRoute>
+        ),
+      },
+      {
         path: "/projects",
-        label: "Projects",
-        element: <Projects />,
-    },
-    {
+        element: (
+          <PrivateRoute>
+            <Projects />
+          </PrivateRoute>
+        ),
+      },
+      {
         path: "/tasks",
-        label: "Tasks",
-        element: <Tasks />,
-    },
-    {
+        element: (
+          <PrivateRoute>
+            <Tasks />
+          </PrivateRoute>
+        ),
+      },
+      {
         path: "/notes",
-        label: "Notes",
-        element: <Notes />,
-    },
-    {
+        element: (
+          <PrivateRoute>
+            <Notes />
+          </PrivateRoute>
+        ),
+      },
+      {
         path: "/commands",
-        label: "Commands",
-        element: <Commands />,
-    },
-    {
+        element: (
+          <PrivateRoute>
+            <Commands />
+          </PrivateRoute>
+        ),
+      },
+      {
         path: "/settings",
-        label: "Settings",
-        element: <Settings />,
-    },
-];
-  const Router = createBrowserRouter([
-    {
-        element: <AppLayout/>,
-        children: routes.map((route) => ({
-            path: route.path,
-            element: route.element,
-        }))
-    }
-  ])
-
-
-
-
-
-
+        element: (
+          <PrivateRoute>
+            <Settings />
+          </PrivateRoute>
+        ),
+      },
+    ],
+  },
+  {
+    path: "/auth",
+    element: <Authentication />,
+  },
+]);
 export default Router;
