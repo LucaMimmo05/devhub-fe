@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:is(.dark *));
+
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -59,9 +61,9 @@
   --primary: oklch(0.55 0.2 265); /* #1E40AF */
   --primary-foreground: oklch(0.98 0.01 260);
 
-  /* SECONDARY */
-  --secondary: oklch(0.25 0.02 260);
-  --secondary-foreground: oklch(0.78 0.01 260);
+  /* SECONDARY – Almost Black */
+  --secondary: oklch(0.22 0.015 260);
+  --secondary-foreground: oklch(0.8 0.01 260);
 
   /* MUTED */
   --muted: oklch(0.23 0.02 260);
@@ -84,8 +86,9 @@
   --sidebar-foreground: oklch(0.92 0.01 260);
   --sidebar-primary: oklch(0.55 0.2 265);
   --sidebar-primary-foreground: oklch(0.98 0.01 260);
-  --sidebar-accent: oklch(0.25 0.02 260);
-  --sidebar-accent-foreground: oklch(0.92 0.01 260);
+  --sidebar-accent: oklch(0.27 0.04 260);
+  --sidebar-accent-foreground: oklch(0.96 0.01 260);
+
   --sidebar-border: oklch(0.28 0.02 260);
   --sidebar-ring: oklch(0.65 0.2 255);
 }
@@ -101,5 +104,25 @@
 
   body {
     @apply bg-background text-foreground antialiased;
+  }
+}
+
+.dark {
+  --sidebar: hsl(240 5.9% 10%);
+  --sidebar-foreground: hsl(240 4.8% 95.9%);
+  --sidebar-primary: hsl(224.3 76.3% 48%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(240 3.7% 15.9%);
+  --sidebar-accent-foreground: hsl(240 4.8% 95.9%);
+  --sidebar-border: hsl(240 3.7% 15.9%);
+  --sidebar-ring: hsl(217.2 91.2% 59.8%);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
   }
 }
