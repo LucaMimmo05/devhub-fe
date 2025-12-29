@@ -1,17 +1,33 @@
 import { createBrowserRouter } from "react-router-dom";
 import AppLayout from "@/layouts/AppLayout";
 import Dashboard from "@/pages/Dashboard/Dashboard";
-import Authentication from "@/pages/Authentication/Authentication";
+import Login from "@/pages/Authentication/Login";
 import Projects from "@/pages/Projects/Projects";
 import Tasks from "@/pages/Tasks/Tasks";
 import Notes from "@/pages/Notes/Notes";
 import Commands from "@/pages/Commands/Commands";
 import Settings from "@/pages/Settings/Settings";
 import PrivateRoute from "@/utils/PrivateRoute";
+import AuthLayout from "@/layouts/AuthLayout";
+import Register from "@/pages/Authentication/Register";
+import NotFound from "@/pages/NotFound/NotFound";
 
 
 
 const Router = createBrowserRouter([
+  {
+    element: <AuthLayout />,
+    children: [
+      {
+        path: "/auth/login",
+        element: <Login />,
+      },
+      {
+        path: "/auth/register",
+        element: <Register />,
+      },
+    ],
+  },
   {
     element: <AppLayout />,
     children: [
@@ -66,8 +82,10 @@ const Router = createBrowserRouter([
     ],
   },
   {
-    path: "/auth",
-    element: <Authentication />,
-  },
+    path: "*",
+    element: <NotFound />,
+
+  }
 ]);
+
 export default Router;
