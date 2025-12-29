@@ -1,7 +1,5 @@
-const GIthub = () => {
-  return (
-    <div>GIthub</div>
-  )
-}
+const Github = () => {
+  return <div>GGithub</div>;
+};
 
-export default GIthub
+export default Github;
