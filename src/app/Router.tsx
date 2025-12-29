@@ -11,6 +11,7 @@ import PrivateRoute from "@/utils/PrivateRoute";
 import AuthLayout from "@/layouts/AuthLayout";
 import Register from "@/pages/Authentication/Register";
 import NotFound from "@/pages/NotFound/NotFound";
+import Github from "@/pages/Github/Github";
 
 
 
@@ -52,6 +53,14 @@ const Router = createBrowserRouter([
         element: (
           <PrivateRoute>
             <Tasks />
+          </PrivateRoute>
+        ),
+      },
+      {
+        path: "/github",
+        element: (
+          <PrivateRoute>
+            <Github />
           </PrivateRoute>
         ),
       },
