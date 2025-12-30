@@ -1,4 +1,5 @@
 import { Input } from "@/components/ui/input";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Search } from "lucide-react";
 
 type PageHeaderProps = {
@@ -9,6 +10,8 @@ type PageHeaderProps = {
 const PageHeader = ({ title, actions }: PageHeaderProps) => {
   return (
     <header className="sticky top-0 z-20 flex h-16 w-full items-center justify-between border-b bg-background px-6">
+      <SidebarTrigger className="md:hidden">
+      </SidebarTrigger>
       <h1 className="text-lg font-semibold">{title}</h1>
 
       <div className="flex items-center gap-2">

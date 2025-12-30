@@ -65,7 +65,7 @@ const AppSidebar = () => {
     },
   ];
   return (
-    <Sidebar className="relative h-screen  border-r transition-all duration-300">
+    <Sidebar className="fixed h-screen w-48 border-r transition-all duration-300">
       <SidebarHeader
         className="
     px-4 py-6 flex items-center justify-between
@@ -99,6 +99,7 @@ const AppSidebar = () => {
               ))}
             </SidebarGroupContent>
           </SidebarGroup>
+          
           <SidebarGroup>
             <SidebarGroupLabel>UTILITIES</SidebarGroupLabel>
             <SidebarGroupContent>
@@ -136,7 +137,7 @@ const AppSidebar = () => {
   "
               >
                 <DropdownMenuItem>
-                  <span>Account</span>
+                    <span>Settings</span>
                 </DropdownMenuItem>
 
                 <DropdownMenuItem
