@@ -70,7 +70,7 @@
   --muted-foreground: oklch(0.75 0.02 255);
 
   /* ACCENT */
-  --accent: oklch(0.6 0.18 255);
+  --accent: oklch(0.27 0.04 260);
   --accent-foreground: oklch(0.98 0.01 260);
 
   /* BORDER & INPUT */
@@ -125,4 +125,30 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--primary)) transparent;
+}
+
+/* Chrome, Edge, Safari */
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--primary));
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: hsl(var(--primary) / 0.8);
 }

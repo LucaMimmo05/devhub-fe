@@ -2,24 +2,16 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import PageContainer from "@/layouts/PageContainer";
 import { Separator } from "@/components/ui/separator";
-import {
-  ArrowRight,
-  CheckSquare2,
-  Command,
-  GitCommit,
-  Plus,
-  StickyNote,
-} from "lucide-react";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { ArrowRight, Plus } from "lucide-react";
+import Task from "@/components/ui/Task";
+import QuickNote from "@/components/ui/QUickNote";
+import GithubActivity from "@/components/ui/GithubActivity";
 
 const Dashboard = () => {
   const taskMockup = [
@@ -92,146 +84,121 @@ const Dashboard = () => {
       content: "Users are experiencing issues with password resets.",
       createdAt: "2024-09-30",
     },
+    {
+      id: 4,
+      title: "Bug Report",
+      content: "Users are experiencing issues with password resets.",
+      createdAt: "2024-09-30",
+    },
+  ];
+
+  const githubActivityMockup = [
+    {
+      id: 1,
+      type: "PushEvent",
+      repo: "devHub/devhub-fe",
+      date: new Date("2025-12-30T21:15:00Z"),
+      text: "Pushed 3 commits to",
+    },
+    {
+      id: 2,
+      type: "PullRequestEvent",
+      repo: "devHub/devhub-be",
+      date: new Date("2025-12-30T12:15:00Z"),
+      text: "Opened a pull request in ",
+    },
+    {
+      id: 3,
+      type: "IssueCommentEvent",
+      repo: "devHub/devhub-fe",
+      date: new Date("2025-12-29T09:45:00Z"),
+      text: "Commented on issue #42 in ",
+    },
   ];
 
   return (
-    <PageContainer className="flex flex-col gap-6 w-full">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full">
-        <Card className="min-h-35 col-span-1 lg:min-h-35 bg-primary flex flex-col">
-          <CardHeader>
-            <CardTitle>Welcome back, User!</CardTitle>
-          </CardHeader>
-
-          <CardContent>
-            You have 3 task for today. Let's get started!
-          </CardContent>
-        </Card>
-
-        <Card className="min-h-30 lg:min-h-35">
-          <CardHeader className="flex-row  items-center gap-2">
-            <CheckSquare2 className="m-0" size={18} />
-            <CardTitle>Open Tasks</CardTitle>
-          </CardHeader>
-          <CardContent className="text-2xl font-normal">
-            12 Active Tasks
-          </CardContent>
-        </Card>
-        <Card className="min-h-30 lg:min-h-35">
-          <CardHeader className="flex-row  items-center gap-2">
-            <GitCommit className="m-0" size={18} />
-            <CardTitle>Commits this week</CardTitle>
-          </CardHeader>
-          <CardContent className="text-2xl font-normal">
-            12 Commits this week
-          </CardContent>
-        </Card>
-        <Card className="min-h-30 lg:min-h-35">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Command className="m-0" size={18} />
-              <CardTitle>Random Command</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent className="text-2xl font-normal">
-            <CardDescription>Command description</CardDescription>
-          </CardContent>
-          <CardFooter className="flex justify-end ">
-            <Button
-              variant="link"
-              className=" flex items-center justify-center cursor-pointer"
-            >
-              See more <ArrowRight className=" mt-0.5" />
-            </Button>
-          </CardFooter>
-        </Card>
-      </div>
-
-      <div className="flex xl:flex-row flex-col flex-wrap gap-6 w-full h-full">
-        <div className="flex flex-wrap gap-6 md:flex-col lg:flex-4">
-          <Card
-            className="min-h-65 flex
-                   w-full flex-2"
-          >
-            <CardHeader>
-              <CardTitle>Project Progress</CardTitle>
+    <PageContainer className="flex flex-col gap-6 w-full xl:overflow-hidden">
+      <div className="grid grid-cols-1 xl:row-span-3 xl:grid-cols-3 gap-6 w-full flex-1 min-h-0">
+        <div className="xl:col-span-2 xl:row-span-2 flex flex-col gap-6 min-h-0">
+          <Card className="min-h-48 xl:min-h-0 flex flex-col flex-3/5">
+            <CardHeader className="pb-1 shrink-0">
+              <CardTitle className="text-base md:text-lg">
+                Projects Overview
+              </CardTitle>
+              <Separator />
             </CardHeader>
+            <CardContent className="flex flex-col gap-2 flex-1 overflow-auto"></CardContent>
           </Card>
-          <div className="flex flex-wrap gap-6 flex-2">
-            <Card className="min-h-35 flex flex-col flex-2">
-              <CardHeader className="pb-0">
-                <CardTitle>Quick Notes</CardTitle>
-                <Separator className="my-3" />
+
+          <div className="flex flex-wrap xl:flex-2/5 gap-6 xl:h-32 shrink-0">
+            <Card className="min-h-40 flex-1 lg:min-h-0 xl:h-full flex flex-col">
+              <CardHeader className="pb-1">
+                <CardTitle className="text-base md:text-lg">Activity</CardTitle>
+                <Separator />
+              </CardHeader>
+              <CardContent className="flex flex-col gap-1 flex-1 ">
+                {githubActivityMockup.map((activity) => (
+                  <GithubActivity key={activity.id} activity={activity} />
+                ))}
+              </CardContent>
+              <CardFooter className="flex justify-end pt-1 pb-2 ">
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="cursor-pointer flex items-center gap-1 p-0"
+                >
+                  View All Activity{" "}
+                  <ArrowRight className="mt-0.5 ml-1" size={16} />
+                </Button>
+              </CardFooter>
+            </Card>
+            <Card className="min-h-40 flex-1 lg:min-h-20 xl:h-full flex flex-col">
+              <CardHeader className="pb-1">
+                <CardTitle className="text-base md:text-lg">
+                  Quick Notes
+                </CardTitle>
+                <Separator className="" />
               </CardHeader>
 
-              {/* 👇 OCCUPA TUTTO LO SPAZIO */}
-              <CardContent className="pb-0 flex flex-col gap-3 flex-1">
+              <CardContent className=" flex flex-col flex-1 overflow-auto pb-0">
                 {notesMockup.map((note) => (
-                  <div className="flex items-center gap-2" key={note.id}>
-                    <StickyNote size={16} />
-                    <h3 className="font-semibold">{note.title}</h3>
-                  </div>
+                  <QuickNote key={note.id} note={note} />
                 ))}
               </CardContent>
 
-              <CardFooter className="flex justify-end">
+              <CardFooter className="pt-1 pb-2">
                 <Button
                   variant="link"
-                  className="cursor-pointer flex items-center gap-2 "
+                  size="sm"
+                  className="cursor-pointer flex items-center gap-1 p-0"
                 >
-                  <Plus size={16} />
+                  <Plus size={14} />
                   New Note
                 </Button>
               </CardFooter>
             </Card>
-
-            <Card
-              className="min-h-35
-                   flex-2"
-            >
-              <CardHeader>
-                <CardTitle>Activity</CardTitle>
-              </CardHeader>
-            </Card>
           </div>
         </div>
 
-        <Card className="min-h-50 flex flex-col w-full flex-2">
-          <CardHeader className="pb-0">
-            <CardTitle>In Progress</CardTitle>
-            <Separator className="my-3" />
+        <Card className="min-h-64 xl:min-h-0 flex flex-col xl:row-span-2">
+          <CardHeader className=" shrink-0">
+            <CardTitle className="text-base md:text-lg">In Progress</CardTitle>
+            <Separator />
           </CardHeader>
 
-          <CardContent className="flex flex-col justify-between flex-1">
-            {taskMockup.map((task) => (
-              <div key={task.id} className="flex items-center gap-4">
-                <Checkbox className="rounded" />
-                <div className="w-full">
-                  <div className="flex justify-between items-center w-full">
-                    <h3 className="text-lg font-semibold">{task.title}</h3>
-                    <Badge
-                      className={cn(
-                        "hover:bg-inset",
-                        task.priority === "High" && "bg-red-700 text-red-200",
-                        task.priority === "Medium" &&
-                          "bg-yellow-700 text-yellow-200",
-                        task.priority === "Low" && "bg-green-700 text-green-200"
-                      )}
-                    >
-                      {task.priority}
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-muted-foreground">{task.status}</p>
-                </div>
-              </div>
+          <CardContent className="flex flex-col gap-2 flex-1 overflow-auto">
+            {taskMockup.slice(0, 5).map((task) => (
+              <Task key={task.id} task={task} />
             ))}
           </CardContent>
 
-          <CardFooter className="flex justify-end">
+          <CardFooter className="flex justify-end pt-1 pb-2 shrink-0">
             <Button
               variant="link"
-              className="cursor-pointer flex items-center gap-2"
+              size="sm"
+              className="cursor-pointer flex items-center gap-1 p-0"
             >
-              View All Tasks <ArrowRight className="mt-0.5" />
+              View All Tasks <ArrowRight className="mt-0.5 ml-1" size={16} />
             </Button>
           </CardFooter>
         </Card>

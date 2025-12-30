@@ -10,11 +10,10 @@ const PageContainer = ({ children, className }: PageContainerProps) => {
   return (
     <div
       className={cn(
-        "w-full h-full max-h-screen mx-auto px-4 md:px-4 lg:px-6 py-6 overflow-x-hidden",
+        "w-full mx-auto px-4 md:px-4 lg:px-6 py-4 xl:h-[calc(100vh-4rem)]",
         className
       )}
     >
-      {" "}
       {children}
     </div>
   );

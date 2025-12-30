@@ -11,20 +11,20 @@ const AppLayout = () => {
 
   const handle = current?.handle as RouteHandle | undefined;
   const actionIds = handle?.header?.actions ?? [];
-  const actions = actionIds
-    .map((id) => HEADER_ACTIONS[id])
-    .filter(Boolean);
+  const actions = actionIds.map((id) => HEADER_ACTIONS[id]).filter(Boolean);
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full overflow-x-hidden">
+      <div className="flex h-screen w-full overflow-hidden">
         <aside className="hidden md:block w-48 shrink-0">
           <AppSidebar />
         </aside>
 
-        <main className="flex-1 flex flex-col min-w-0 overflow-x-hidden">
+        <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
           <PageHeader title={handle?.title} actions={actions} />
-          <Outlet />
+          <div className="flex-1 overflow-y-auto overflow-x-hidden">
+            <Outlet />
+          </div>
         </main>
       </div>
     </SidebarProvider>
