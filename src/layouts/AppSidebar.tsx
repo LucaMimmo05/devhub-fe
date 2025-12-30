@@ -65,7 +65,7 @@ const AppSidebar = () => {
     },
   ];
   return (
-    <Sidebar className="h-screen w-50 border-r transition-all duration-300">
+    <Sidebar className="relative h-screen  border-r transition-all duration-300">
       <SidebarHeader
         className="
     px-4 py-6 flex items-center justify-between

@@ -1,100 +1,101 @@
 import { createBrowserRouter } from "react-router-dom";
+
 import AppLayout from "@/layouts/AppLayout";
+import AuthLayout from "@/layouts/AuthLayout";
+import PrivateRoute from "@/utils/PrivateRoute";
+
 import Dashboard from "@/pages/Dashboard/Dashboard";
-import Login from "@/pages/Authentication/Login";
 import Projects from "@/pages/Projects/Projects";
 import Tasks from "@/pages/Tasks/Tasks";
+import Github from "@/pages/Github/Github";
 import Notes from "@/pages/Notes/Notes";
 import Commands from "@/pages/Commands/Commands";
 import Settings from "@/pages/Settings/Settings";
-import PrivateRoute from "@/utils/PrivateRoute";
-import AuthLayout from "@/layouts/AuthLayout";
+
+import Login from "@/pages/Authentication/Login";
 import Register from "@/pages/Authentication/Register";
 import NotFound from "@/pages/NotFound/NotFound";
-import Github from "@/pages/Github/Github";
 
+export type RouteHandle = {
+  title?: string;
+  header?: {
+    showSearch?: boolean;
+    actions?: string[];
+  };
+};
 
-
-const Router = createBrowserRouter([
+const router = createBrowserRouter([
   {
     element: <AuthLayout />,
     children: [
-      {
-        path: "/auth/login",
-        element: <Login />,
-      },
-      {
-        path: "/auth/register",
-        element: <Register />,
-      },
+      { path: "/auth/login", element: <Login /> },
+      { path: "/auth/register", element: <Register /> },
     ],
   },
   {
-    element: <AppLayout />,
+    element: (
+      <PrivateRoute>
+        <AppLayout />
+      </PrivateRoute>
+    ),
     children: [
       {
-        path: "/",
-        element: (
-          <PrivateRoute>
-            <Dashboard />
-          </PrivateRoute>
-        ),
+        index: true,
+        element: <Dashboard />,
+        handle: {
+          title: "Dashboard",
+          header: { showSearch: false },
+        } satisfies RouteHandle,
       },
       {
-        path: "/projects",
-        element: (
-          <PrivateRoute>
-            <Projects />
-          </PrivateRoute>
-        ),
+        path: "projects",
+        element: <Projects />,
+        handle: {
+          title: "Projects",
+          header: { showSearch: true, actions: ["add", "filter"] },
+        } satisfies RouteHandle,
       },
       {
-        path: "/tasks",
-        element: (
-          <PrivateRoute>
-            <Tasks />
-          </PrivateRoute>
-        ),
+        path: "tasks",
+        element: <Tasks />,
+        handle: {
+          title: "Tasks",
+          header: { showSearch: true, actions: ["add"] },
+        } satisfies RouteHandle,
       },
       {
-        path: "/github",
-        element: (
-          <PrivateRoute>
-            <Github />
-          </PrivateRoute>
-        ),
+        path: "github",
+        element: <Github />,
+        handle: {
+          title: "GitHub",
+          header: { actions: ["sync"] },
+        } satisfies RouteHandle,
       },
       {
-        path: "/notes",
-        element: (
-          <PrivateRoute>
-            <Notes />
-          </PrivateRoute>
-        ),
+        path: "notes",
+        element: <Notes />,
+        handle: {
+          title: "Notes",
+          header: { showSearch: true, actions: ["add"] },
+        } satisfies RouteHandle,
       },
       {
-        path: "/commands",
-        element: (
-          <PrivateRoute>
-            <Commands />
-          </PrivateRoute>
-        ),
+        path: "commands",
+        element: <Commands />,
+        handle: {
+          title: "Commands",
+        } satisfies RouteHandle,
       },
       {
-        path: "/settings",
-        element: (
-          <PrivateRoute>
-            <Settings />
-          </PrivateRoute>
-        ),
+        path: "settings",
+        element: <Settings />,
+        handle: {
+          title: "Settings",
+        } satisfies RouteHandle,
       },
     ],
   },
-  {
-    path: "*",
-    element: <NotFound />,
-
-  }
+  { path: "*", element: <NotFound /> },
 ]);
 
-export default Router;
+export default router;
