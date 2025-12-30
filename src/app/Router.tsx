@@ -43,7 +43,7 @@ const router = createBrowserRouter([
         index: true,
         element: <Dashboard />,
         handle: {
-          title: "Dashboard",
+          title: "Welcome back, Luca!",
           header: { showSearch: false },
         } satisfies RouteHandle,
       },
