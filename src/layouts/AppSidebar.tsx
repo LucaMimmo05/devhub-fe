@@ -66,7 +66,7 @@ const AppSidebar = () => {
     },
   ];
 
-  const {logout} = useAuth();
+  const { logout, user } = useAuth();
   return (
     <Sidebar className="fixed h-screen w-48 border-r transition-all duration-300">
       <SidebarHeader
@@ -102,7 +102,7 @@ const AppSidebar = () => {
               ))}
             </SidebarGroupContent>
           </SidebarGroup>
-          
+
           <SidebarGroup>
             <SidebarGroupLabel>UTILITIES</SidebarGroupLabel>
             <SidebarGroupContent>
@@ -127,7 +127,8 @@ const AppSidebar = () => {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton>
-                  <User2 /> Username
+                  <User2 />
+                  {user?.firstName} {user?.lastName}
                   <ChevronUp className="ml-auto" />
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
@@ -140,10 +141,11 @@ const AppSidebar = () => {
   "
               >
                 <DropdownMenuItem>
-                    <span>Settings</span>
+                  <span>Settings</span>
                 </DropdownMenuItem>
 
-                <DropdownMenuItem onClick={() => logout()}
+                <DropdownMenuItem
+                  onClick={() => logout()}
                   className="data-highlighted:bg-destructive
     data-highlighted:text-destructive-foreground"
                 >

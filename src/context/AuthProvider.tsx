@@ -23,11 +23,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const data = await loginService(email, password);
 
       localStorage.setItem("accessToken", data.accessToken);
-      localStorage.setItem("userId", data.userId);
 
       if (data.userProfile) {
         localStorage.setItem("userData", JSON.stringify(data.userProfile));
-        setUser(data.userProfile);
+        setUser(JSON.parse(JSON.stringify(data.userProfile)));
       }
 
       axios.defaults.headers.common[
@@ -50,7 +49,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       localStorage.removeItem("accessToken");
       localStorage.removeItem("userData");
-      localStorage.removeItem("userId");
 
       delete axios.defaults.headers.common["Authorization"];
 
@@ -71,7 +69,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         "Authorization"
       ] = `Bearer ${refreshData.accessToken}`;
 
-      if (storedUser) {
+      if (refreshData.userProfile) {
+        setUser(refreshData.userProfile);
+        localStorage.setItem(
+          "userData",
+          JSON.stringify(refreshData.userProfile)
+        );
+      } else if (storedUser) {
         setUser(JSON.parse(storedUser));
       }
       setStatus("authenticated");
@@ -79,7 +83,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setStatus("unauthenticated");
       localStorage.removeItem("accessToken");
       localStorage.removeItem("userData");
-      localStorage.removeItem("userId");
       console.error("Token refresh failed:", error);
     }
   };

@@ -12,7 +12,6 @@ import { ArrowRight, Plus } from "lucide-react";
 import Task from "@/components/ui/Task";
 import QuickNote from "@/components/ui/QuickNote";
 import GithubActivity from "@/components/ui/GithubActivity";
-
 const Dashboard = () => {
   const taskMock = [
     {
@@ -115,7 +114,6 @@ const Dashboard = () => {
       text: "Commented on issue #42 in ",
     },
   ];
-
   return (
     <PageContainer className="flex flex-col gap-6 w-full xl:overflow-hidden">
       <div className="grid grid-cols-1 xl:row-span-3 xl:grid-cols-3 gap-6 w-full flex-1 min-h-0">

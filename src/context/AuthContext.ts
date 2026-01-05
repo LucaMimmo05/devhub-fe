@@ -2,7 +2,7 @@ import { createContext, useContext } from "react";
 
 export type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 
- export type AuthContextValue = {
+export type AuthContextValue = {
   status: AuthStatus;
   isAuthenticated: boolean;
   user: null | User;
@@ -12,9 +12,10 @@ export type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 };
 
 export type User = {
-  id: number;
-  fullName: string;
-  email: string;
+  id: string;
+  firstName: string;
+  lastName: string;
+  avatarUrl?: string;
 };
 
 export const AuthContext = createContext<AuthContextValue | null>(null);
@@ -23,7 +24,9 @@ export const useAuth = () => {
   const context = useContext(AuthContext);
 
   if (!context) {
-    throw new Error("useAuth deve essere utilizzato all'interno di un AuthProvider");
+    throw new Error(
+      "useAuth deve essere utilizzato all'interno di un AuthProvider"
+    );
   }
 
   return context;
