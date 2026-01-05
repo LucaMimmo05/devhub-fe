@@ -11,8 +11,10 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Link } from "react-router-dom";
 import { SiGithub, SiGoogle } from "react-icons/si";
+import SubmitButton from "../ui/SubmitButton";
+import { useAuth } from "@/context/AuthContext";
 
-interface AuthFormProps {
+type AuthFormProps = {
   title: string;
   description: string;
   children: ReactNode;
@@ -24,7 +26,8 @@ interface AuthFormProps {
 
   showSocialAuth?: boolean;
   showForgotPassword?: boolean;
-}
+  onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+};
 
 export const AuthForm = ({
   title,
@@ -36,9 +39,11 @@ export const AuthForm = ({
   footerLinkTo,
   showSocialAuth = true,
   showForgotPassword = false,
+  onSubmit,
 }: AuthFormProps) => {
+  const { status } = useAuth();
   return (
-    <section className="w-full max-w-sm">
+    <form className="w-full max-w-sm" onSubmit={onSubmit}>
       <Card>
         <CardHeader className="text-center space-y-2 pb-8">
           <CardTitle className="text-3xl font-semibold">{title}</CardTitle>
@@ -60,7 +65,9 @@ export const AuthForm = ({
           )}
 
           <div className="pt-2">
-            <Button className="w-full">{submitText}</Button>
+            <SubmitButton loading={status === "loading"} disabled={status === "loading"} className="w-full" type="submit">
+              {submitText}
+            </SubmitButton>
           </div>
         </CardContent>
 
@@ -98,6 +105,6 @@ export const AuthForm = ({
           </p>
         </CardFooter>
       </Card>
-    </section>
+    </form>
   );
 };

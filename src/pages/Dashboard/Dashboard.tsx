@@ -10,11 +10,11 @@ import PageContainer from "@/layouts/PageContainer";
 import { Separator } from "@/components/ui/separator";
 import { ArrowRight, Plus } from "lucide-react";
 import Task from "@/components/ui/Task";
-import QuickNote from "@/components/ui/QUickNote";
+import QuickNote from "@/components/ui/QuickNote";
 import GithubActivity from "@/components/ui/GithubActivity";
 
 const Dashboard = () => {
-  const taskMockup = [
+  const taskMock = [
     {
       id: 1,
       title: "Design new landing page",
@@ -65,7 +65,7 @@ const Dashboard = () => {
     },
   ];
 
-  const notesMockup = [
+  const notesMock = [
     {
       id: 1,
       title: "Meeting Notes",
@@ -161,7 +161,7 @@ const Dashboard = () => {
               </CardHeader>
 
               <CardContent className=" flex flex-col flex-1 overflow-auto pb-0">
-                {notesMockup.map((note) => (
+                {notesMock.map((note) => (
                   <QuickNote key={note.id} note={note} />
                 ))}
               </CardContent>
@@ -187,7 +187,7 @@ const Dashboard = () => {
           </CardHeader>
 
           <CardContent className="flex flex-col gap-2 flex-1 overflow-auto">
-            {taskMockup.slice(0, 5).map((task) => (
+            {taskMock.slice(0, 5).map((task) => (
               <Task key={task.id} task={task} />
             ))}
           </CardContent>
