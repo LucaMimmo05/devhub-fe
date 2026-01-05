@@ -17,6 +17,7 @@ import {
   SidebarGroupLabel,
   SidebarGroupContent,
 } from "@/components/ui/sidebar";
+import { useAuth } from "@/context/AuthContext";
 import {
   CheckSquare,
   ChevronUp,
@@ -64,6 +65,8 @@ const AppSidebar = () => {
       icon: Command,
     },
   ];
+
+  const {logout} = useAuth();
   return (
     <Sidebar className="fixed h-screen w-48 border-r transition-all duration-300">
       <SidebarHeader
@@ -140,7 +143,7 @@ const AppSidebar = () => {
                     <span>Settings</span>
                 </DropdownMenuItem>
 
-                <DropdownMenuItem
+                <DropdownMenuItem onClick={() => logout()}
                   className="data-highlighted:bg-destructive
     data-highlighted:text-destructive-foreground"
                 >
