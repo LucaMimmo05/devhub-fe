@@ -5,21 +5,21 @@ import {
   DropdownMenuTrigger,
   DropdownMenu,
 } from "@/components/ui/dropdown-menu";
-import { Plus, Filter, RefreshCw } from "lucide-react";
+import { Plus, Filter, RefreshCw, ChevronDown } from "lucide-react";
 
 export const HEADER_ACTIONS: Record<string, React.ReactNode> = {
   addDropdown: (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline">
-          <Plus />
+        <Button variant="default">
+          Create New <ChevronDown className="ml-1" size={16} />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
-        <DropdownMenuItem>New Project</DropdownMenuItem>
-        <DropdownMenuItem>New Task</DropdownMenuItem>
-        <DropdownMenuItem>New Command</DropdownMenuItem>
-        <DropdownMenuItem>New Note</DropdownMenuItem>
+        <DropdownMenuItem>Project</DropdownMenuItem>
+        <DropdownMenuItem>Task</DropdownMenuItem>
+        <DropdownMenuItem>Command</DropdownMenuItem>
+        <DropdownMenuItem>Note</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   ),

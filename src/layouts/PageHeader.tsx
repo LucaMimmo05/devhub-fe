@@ -12,7 +12,7 @@ const PageHeader = ({ title, actions }: PageHeaderProps) => {
     <header className="sticky top-0 z-20 flex h-16 w-full items-center justify-between border-b bg-background px-6">
       <SidebarTrigger className="md:hidden">
       </SidebarTrigger>
-      <h1 className="text-lg font-semibold">{title}</h1>
+      <h1 className="text-lg hidden sm:block font-semibold">{title}</h1>
 
       <div className="flex items-center gap-2">
         <div className="relative w-64">
