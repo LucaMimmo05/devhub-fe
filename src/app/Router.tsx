@@ -47,7 +47,7 @@ const router = createBrowserRouter([
         element: <Dashboard />,
         handle: {
           title: `Welcome back ${fullName}!`,
-          header: { showSearch: false },
+          header: { showSearch: false, actions: ["addDropdown"] },
         } satisfies RouteHandle,
       },
       {
