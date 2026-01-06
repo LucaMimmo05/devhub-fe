@@ -165,7 +165,7 @@ const Dashboard = () => {
             </CardHeader>
           </Card>
           <div className="flex-4 flex flex-col gap-4 md:flex-col">
-            <div className="flex gap-1 flex-col">
+            <div className="flex gap-0.5 flex-col">
               <CardTitle className="text-base md:text-lg">
                 Here's the latest projects
               </CardTitle>
