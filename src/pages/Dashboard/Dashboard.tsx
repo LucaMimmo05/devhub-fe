@@ -24,6 +24,7 @@ const Dashboard = () => {
       priority: "Medium",
       createdAt: "2024-10-01",
       updatedAt: "2024-10-03",
+      project: "Website Redesign",
     },
     {
       id: 2,
@@ -32,6 +33,7 @@ const Dashboard = () => {
       priority: "High",
       createdAt: "2024-10-01",
       updatedAt: "2024-10-02",
+      project: "Authentication Module",
     },
     {
       id: 3,
@@ -40,6 +42,7 @@ const Dashboard = () => {
       priority: "Medium",
       createdAt: "2024-09-29",
       updatedAt: "2024-10-02",
+      project: "Task Management",
     },
     {
       id: 4,
@@ -48,6 +51,7 @@ const Dashboard = () => {
       priority: "Low",
       createdAt: "2024-09-25",
       updatedAt: "2024-09-30",
+      project: "Backend Improvements",
     },
     {
       id: 5,
@@ -56,14 +60,16 @@ const Dashboard = () => {
       priority: "High",
       createdAt: "2024-09-28",
       updatedAt: "2024-10-03",
+      project: "DevOps",
     },
     {
-      id: 5,
-      title: "Setup CI/CD pipeline",
+      id: 6,
+      title: "Perform code review for feature X",
       status: "In Progress",
       priority: "High",
       createdAt: "2024-09-28",
       updatedAt: "2024-10-03",
+      project: "Frontend Enhancements",
     },
   ];
 
@@ -236,7 +242,7 @@ const Dashboard = () => {
             <Separator />
           </CardHeader>
 
-          <CardContent className="flex flex-col gap-2 flex-1 overflow-auto">
+          <CardContent className="flex flex-col gap-4 flex-1 overflow-auto">
             {taskMock.slice(0, 5).map((task) => (
               <Task key={task.id} task={task} />
             ))}

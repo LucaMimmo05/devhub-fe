@@ -1,6 +1,8 @@
 import { Input } from "@/components/ui/input";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { useAuth } from "@/context/AuthContext";
 import { Search } from "lucide-react";
+import { useLocation } from "react-router-dom";
 
 type PageHeaderProps = {
   title?: string;
@@ -8,11 +10,22 @@ type PageHeaderProps = {
 };
 
 const PageHeader = ({ title, actions }: PageHeaderProps) => {
+  const { user } = useAuth();
+  const location = useLocation();
+
+  const fullName =
+    user?.firstName && user?.lastName
+      ? `${user.firstName} ${user.lastName}`
+      : "User";
+
+  const isHome = location.pathname === "/";
+
   return (
     <header className="sticky top-0 z-20 flex h-16 w-full items-center justify-between border-b bg-background px-6">
-      <SidebarTrigger className="md:hidden">
-      </SidebarTrigger>
-      <h1 className="text-lg hidden sm:block font-semibold">{title}</h1>
+      <SidebarTrigger className="md:hidden"></SidebarTrigger>
+      <h1 className="text-lg hidden sm:block font-semibold">
+        {isHome ? `Welcome back, ${fullName}!` : title}
+      </h1>
 
       <div className="flex items-center gap-2">
         <div className="relative w-64">

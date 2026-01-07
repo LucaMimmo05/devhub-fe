@@ -9,6 +9,7 @@ export type TaskProps = {
     priority: string; // "High" | "Medium" | "Low";
     createdAt: string;
     updatedAt: string;
+    project: string;
   };
   key: number;
 };
@@ -19,14 +20,14 @@ const Task = ({ task }: TaskProps) => {
       <Checkbox className="rounded mt-2 shrink-0" />
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap justify-between items-center gap-2">
-          <h3 className="text-sm md:text-lg font-normal truncate">
+          <h3 className="text-md font-normal truncate">
             {task.title}
           </h3>
           <PriorityBadge data={task.priority}>{task.priority}</PriorityBadge>
           
         </div>
         <p className="text-xs md:text-sm text-muted-foreground">
-          {task.status}
+          {task.project}
         </p>
       </div>
     </div>
