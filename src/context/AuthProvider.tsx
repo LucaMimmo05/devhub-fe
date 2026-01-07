@@ -97,6 +97,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (!isMounted) return;
 
       await refreshAuth();
+      
     };
     init();
 

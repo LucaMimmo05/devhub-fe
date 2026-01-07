@@ -16,6 +16,7 @@ export type User = {
   firstName: string;
   lastName: string;
   avatarUrl?: string;
+  username: string;
 };
 
 export const AuthContext = createContext<AuthContextValue | null>(null);
