@@ -6,10 +6,11 @@ import { useLocation } from "react-router-dom";
 
 type PageHeaderProps = {
   title?: string;
+  showSearch?: boolean;
   actions?: React.ReactNode;
 };
 
-const PageHeader = ({ title, actions }: PageHeaderProps) => {
+const PageHeader = ({ title, showSearch, actions }: PageHeaderProps) => {
   const { user } = useAuth();
   const location = useLocation();
 
@@ -28,10 +29,12 @@ const PageHeader = ({ title, actions }: PageHeaderProps) => {
       </h1>
 
       <div className="flex items-center gap-2">
-        <div className="relative w-64">
+        {showSearch && (
+          <div className="relative w-64">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input placeholder="Search…" className="pl-9" />
         </div>
+        )}
         {actions}
       </div>
     </header>

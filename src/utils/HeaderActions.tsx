@@ -5,7 +5,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenu,
 } from "@/components/ui/dropdown-menu";
-import { Plus, Filter, RefreshCw, ChevronDown } from "lucide-react";
+import { Plus, Filter, RefreshCw, ChevronDown, Trash2, Edit } from "lucide-react";
 
 export const HEADER_ACTIONS: Record<string, React.ReactNode> = {
   addDropdown: (
@@ -36,6 +36,16 @@ export const HEADER_ACTIONS: Record<string, React.ReactNode> = {
   sync: (
     <Button variant="outline">
       <RefreshCw />
+    </Button>
+  ),
+  edit: (
+    <Button variant="outline">
+      <Edit/>
+    </Button>
+  ),
+  delete: (
+    <Button variant="destructive">
+        <Trash2/>
     </Button>
   ),
 };

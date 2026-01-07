@@ -15,15 +15,16 @@ import Settings from "@/pages/Settings/Settings";
 import Login from "@/pages/Authentication/Login";
 import Register from "@/pages/Authentication/Register";
 import NotFound from "@/pages/NotFound/NotFound";
+import ProjectDetails from "@/pages/ProjectDetails/ProjectDetails";
+import { projectMock } from "@/mock/dashboard-mock";
 
-export type RouteHandle = {
-  title?: string;
+export type RouteHandle<TData = unknown> = {
+  title?: string | ((params: Record<string, string>, data?: TData) => string);
   header?: {
     showSearch?: boolean;
     actions?: string[];
   };
 };
-
 
 const router = createBrowserRouter([
   {
@@ -44,7 +45,7 @@ const router = createBrowserRouter([
         index: true,
         element: <Dashboard />,
         handle: {
-          header: { showSearch: false, actions: ["addDropdown"] },
+          header: { showSearch: true, actions: ["addDropdown"] },
         } satisfies RouteHandle,
       },
       {
@@ -54,6 +55,23 @@ const router = createBrowserRouter([
           title: "Projects",
           header: { showSearch: true, actions: ["add", "filter"] },
         } satisfies RouteHandle,
+      },
+      {
+        path: "projects/:projectId",
+        element: <ProjectDetails />,
+        loader: async ({ params }) => {
+          const project = projectMock.find(
+            (p) => p.id.toString() === params.projectId
+          );
+          if (!project) throw new Response("Not Found", { status: 404 });
+          return { project };
+        },
+        handle: {
+          title: (params, data) => data?.project?.name || "Project",
+          header: { showSearch: false, actions: ["edit", "delete"] },
+        } satisfies RouteHandle<{
+          project: { id: number; name: string; description: string };
+        }>,
       },
       {
         path: "tasks",
