@@ -1,0 +1,140 @@
+ export const taskMock = [
+    {
+      id: 1,
+      title: "Design new landing page",
+      status: "In Progress",
+      priority: "Medium",
+      createdAt: "2024-10-01",
+      updatedAt: "2024-10-03",
+      project: "Website Redesign",
+    },
+    {
+      id: 2,
+      title: "Fix login bug",
+      status: "Pending",
+      priority: "High",
+      createdAt: "2024-10-01",
+      updatedAt: "2024-10-02",
+      project: "Authentication Module",
+    },
+    {
+      id: 3,
+      title: "Implement task filters",
+      status: "In Review",
+      priority: "Medium",
+      createdAt: "2024-09-29",
+      updatedAt: "2024-10-02",
+      project: "Task Management",
+    },
+    {
+      id: 4,
+      title: "Optimize database queries",
+      status: "Completed",
+      priority: "Low",
+      createdAt: "2024-09-25",
+      updatedAt: "2024-09-30",
+      project: "Backend Improvements",
+    },
+    {
+      id: 5,
+      title: "Setup CI/CD pipeline",
+      status: "In Progress",
+      priority: "High",
+      createdAt: "2024-09-28",
+      updatedAt: "2024-10-03",
+      project: "DevOps",
+    },
+    {
+      id: 6,
+      title: "Perform code review for feature X",
+      status: "In Progress",
+      priority: "High",
+      createdAt: "2024-09-28",
+      updatedAt: "2024-10-03",
+      project: "Frontend Enhancements",
+    },
+  ];
+
+ export const notesMock = [
+    {
+      id: 1,
+      title: "Meeting Notes",
+      content: "Remember to review the PR for the new feature.",
+      createdAt: "2024-10-02",
+    },
+    {
+      id: 2,
+      title: "Ideas",
+      content: "Consider adding a dark mode to the application.",
+      createdAt: "2024-10-01",
+    },
+    {
+      id: 3,
+      title: "Bug Report",
+      content: "Users are experiencing issues with password resets.",
+      createdAt: "2024-09-30",
+    },
+    {
+      id: 4,
+      title: "Bug Report",
+      content: "Users are experiencing issues with password resets.",
+      createdAt: "2024-09-30",
+    },
+  ];
+
+ export const githubActivityMock = [
+    {
+      id: 1,
+      type: "PushEvent",
+      repo: "devHub/devhub-fe",
+      date: new Date("2025-12-30T21:15:00Z"),
+      text: "Pushed 3 commits to",
+    },
+    {
+      id: 2,
+      type: "PullRequestEvent",
+      repo: "devHub/devhub-be",
+      date: new Date("2025-12-30T12:15:00Z"),
+      text: "Opened a pull request in ",
+    },
+    {
+      id: 3,
+      type: "IssueCommentEvent",
+      repo: "devHub/devhub-fe",
+      date: new Date("2025-12-29T09:45:00Z"),
+      text: "Commented on issue #42 in ",
+    },
+  ];
+
+ export const projectMock = [
+    {
+      id: 1,
+      name: "Project Alpha",
+      description: "A new marketing website",
+      status: "In Progress",
+      tasksCount: 12,
+      progress: 65,
+      membersNumber: 5,
+      dueDate: new Date("2024-12-31"),
+    },
+    {
+      id: 2,
+      name: "Project Beta",
+      description: "Mobile app development",
+      status: "Completed",
+      tasksCount: 8,
+      progress: 100,
+      membersNumber: 3,
+      dueDate: new Date("2024-11-15"),
+    },
+    {
+      id: 3,
+      name: "Project Gamma",
+      description: "Backend API overhaul",
+      status: "Pending",
+      tasksCount: 15,
+      progress: 20,
+      membersNumber: 7,
+      dueDate: new Date("2025-01-20"),
+    },
+  ];

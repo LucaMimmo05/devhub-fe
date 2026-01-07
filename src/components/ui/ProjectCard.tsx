@@ -19,20 +19,12 @@ import { Button } from "./button";
 import PriorityBadge from "./PriorityBadge";
 import { Badge } from "./badge";
 import { Separator } from "./separator";
+import { useNavigate } from "react-router-dom";
+import type { ProjectProps } from "@/types/projectType";
 
-type ProjectProps = {
-  project: {
-    id: number;
-    name: string;
-    description: string;
-    status: string;
-    tasksCount: number;
-    progress: number;
-    membersNumber: number;
-    dueDate: Date;
-  };
-};
+
 const ProjectCard = ({ project }: ProjectProps) => {
+  const navigate = useNavigate();
   return (
     <Card className="xl:min-w-120 min-w-100 flex-1 lg:max-w-[calc(50%-1rem)]">
       <CardHeader className="flex  flex-row justify-between items-center pb-3">
@@ -96,6 +88,7 @@ const ProjectCard = ({ project }: ProjectProps) => {
             variant="link"
             size="sm"
             className="hover:bg-inset cursor-pointer px-2 ml-auto"
+            onClick={() => navigate(`/projects/${project.id}`)}
           >
             Go To {project.name}
             <ArrowRight size={16} />
