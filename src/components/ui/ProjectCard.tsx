@@ -29,6 +29,7 @@ type ProjectProps = {
     tasksCount: number;
     progress: number;
     membersNumber: number;
+    dueDate: Date;
   };
 };
 const ProjectCard = ({ project }: ProjectProps) => {
@@ -84,15 +85,21 @@ const ProjectCard = ({ project }: ProjectProps) => {
       <CardFooter className="flex-col">
         <Separator />
         <div className="flex justify-between items-center w-full">
-          <p className="text-muted-foreground text-sm">12 december 2026</p>
+          <p className="text-muted-foreground text-sm">
+            {project.dueDate.toLocaleDateString("en-GB", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+            })}
+          </p>
           <Button
-          variant="link"
-          size="sm"
-          className="hover:bg-inset cursor-pointer px-2 ml-auto"
-        >
-          Go To {project.name}
-          <ArrowRight className="" size={16} />
-        </Button>
+            variant="link"
+            size="sm"
+            className="hover:bg-inset cursor-pointer px-2 ml-auto"
+          >
+            Go To {project.name}
+            <ArrowRight size={16} />
+          </Button>
         </div>
       </CardFooter>
     </Card>

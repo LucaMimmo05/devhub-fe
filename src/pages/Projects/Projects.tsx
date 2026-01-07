@@ -11,6 +11,7 @@ const Projects = () => {
       tasksCount: 12,
       progress: 65,
       membersNumber: 5,
+      dueDate: new Date("2024-12-31"),
     },
     {
       id: 2,
@@ -20,6 +21,7 @@ const Projects = () => {
       tasksCount: 8,
       progress: 100,
       membersNumber: 3,
+      dueDate: new Date("2024-11-15"),
     },
     {
       id: 3,
@@ -29,6 +31,7 @@ const Projects = () => {
       tasksCount: 15,
       progress: 20,
       membersNumber: 7,
+      dueDate: new Date("2025-01-20"),
     },
     {
       id: 4,
@@ -38,6 +41,7 @@ const Projects = () => {
       tasksCount: 10,
       progress: 50,
       membersNumber: 4,
+      dueDate: new Date("2024-12-10"),
     },
     {
       id: 5,
@@ -47,6 +51,7 @@ const Projects = () => {
       tasksCount: 20,
       progress: 10,
       membersNumber: 6,
+      dueDate: new Date("2025-02-28"),
     },
     {
       id: 6,
@@ -56,6 +61,7 @@ const Projects = () => {
       tasksCount: 5,
       progress: 100,
       membersNumber: 2,
+      dueDate: new Date("2024-10-31"),
     },
     {
       id: 7,
@@ -65,6 +71,7 @@ const Projects = () => {
       tasksCount: 5,
       progress: 100,
       membersNumber: 2,
+      dueDate: new Date("2024-10-31"),
     },
   ];
   return (
