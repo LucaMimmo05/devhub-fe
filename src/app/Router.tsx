@@ -15,6 +15,7 @@ import Settings from "@/pages/Settings/Settings";
 import Login from "@/pages/Authentication/Login";
 import Register from "@/pages/Authentication/Register";
 import NotFound from "@/pages/NotFound/NotFound";
+
 export type RouteHandle = {
   title?: string;
   header?: {
@@ -23,9 +24,6 @@ export type RouteHandle = {
   };
 };
 
-const userDataString = localStorage.getItem("userData");
-const userData = userDataString ? JSON.parse(userDataString) : null;
-const fullName = userData?.firstName + " " + userData?.lastName || "User";
 
 const router = createBrowserRouter([
   {
@@ -46,7 +44,6 @@ const router = createBrowserRouter([
         index: true,
         element: <Dashboard />,
         handle: {
-          title: `Welcome back ${fullName}!`,
           header: { showSearch: false, actions: ["addDropdown"] },
         } satisfies RouteHandle,
       },
