@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Badge } from "./badge";
 import { cn } from "@/lib/utils";
-const PriorityBadge = ({ data, children }: { data: string; children: ReactNode }) => {
+const PriorityBadge = ({ data, children }: { data: "Low" | "Medium" | "High" | "Pending" | "In Progress" | "Completed"; children: ReactNode }) => {
   return (
     <Badge
       className={cn(
