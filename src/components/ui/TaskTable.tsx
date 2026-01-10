@@ -26,8 +26,8 @@ const TaskTable = ({ data }: TasksProps) => {
   ];
 
   return (
-    <div className="overflow-auto rounded-md bordered">
-      <Table className="min-w-full">
+    <div className="overflow-x-auto rounded-md bordered">
+      <Table className="min-w-150 table-auto">
         <TableHeader>
           <TableRow>
             {taskHeader.map((head) => {
