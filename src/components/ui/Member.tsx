@@ -3,8 +3,8 @@ import { Badge } from "./badge";
 import { cn } from "@/lib/utils";
 
 type MemberProps = {
-    member : MemberType
-}
+  member: MemberType;
+};
 
 const Member = ({ member }: MemberProps) => {
   return (
@@ -19,7 +19,9 @@ const Member = ({ member }: MemberProps) => {
         />
         <div className="flex flex-col min-w-0">
           <h3 className="truncate text-sm font-medium">{member.name}</h3>
-          <p className="text-xs text-muted-foreground truncate">{member.email}</p>
+          <p className="text-xs text-muted-foreground truncate">
+            {member.email}
+          </p>
         </div>
       </div>
       <Badge
