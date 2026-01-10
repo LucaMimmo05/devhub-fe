@@ -1,4 +1,4 @@
-import { ArrowRight, Ellipsis } from "lucide-react";
+import { ArrowRight, Calendar, Ellipsis } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -20,8 +20,11 @@ import PriorityBadge from "./PriorityBadge";
 import { Badge } from "./badge";
 import { Separator } from "./separator";
 import { useNavigate } from "react-router-dom";
-import type { ProjectProps } from "@/types/projectType";
+import type { ProjectType } from "@/types/projectType";
 
+export type ProjectProps = {
+  project: ProjectType
+}
 
 const ProjectCard = ({ project }: ProjectProps) => {
   const navigate = useNavigate();
@@ -57,12 +60,8 @@ const ProjectCard = ({ project }: ProjectProps) => {
             <DropdownMenuSeparator />
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem className="text-yellow-600">
-                Archive Project
-              </DropdownMenuItem>
-              <DropdownMenuItem className="text-red-600">
-                Delete Project
-              </DropdownMenuItem>
+              <DropdownMenuItem>Archive Project</DropdownMenuItem>
+              <DropdownMenuItem>Delete Project</DropdownMenuItem>
             </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -77,13 +76,16 @@ const ProjectCard = ({ project }: ProjectProps) => {
       <CardFooter className="flex-col">
         <Separator />
         <div className="flex justify-between items-center w-full">
-          <p className="text-muted-foreground text-sm">
-            {project.dueDate.toLocaleDateString("en-GB", {
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-            })}
-          </p>
+          <div className="flex items-center gap-2">
+            <Calendar size={16} />
+            <p className="text-muted-foreground text-sm">
+              {project.dueDate.toLocaleDateString("en-GB", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              })}
+            </p>
+          </div>
           <Button
             variant="link"
             size="sm"
