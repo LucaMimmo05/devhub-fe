@@ -53,7 +53,7 @@ const router = createBrowserRouter([
         element: <Projects />,
         handle: {
           title: "Projects",
-          header: { showSearch: true, actions: ["add", "filter"] },
+          header: { showSearch: true, actions: ["add"] },
         } satisfies RouteHandle,
       },
       {
@@ -67,8 +67,8 @@ const router = createBrowserRouter([
           return { project };
         },
         handle: {
-          title: (params, data) => data?.project?.name || "Project",
-          header: { showSearch: false, actions: ["edit", "delete"] },
+          title: "Overview",
+          header: { showSearch: false, actions: ["add","editProjectDropdown"] },
         } satisfies RouteHandle<{
           project: { id: number; name: string; description: string };
         }>,
@@ -78,7 +78,7 @@ const router = createBrowserRouter([
         element: <Tasks />,
         handle: {
           title: "Tasks",
-          header: { showSearch: true, actions: ["add"] },
+          header: { showSearch: true },
         } satisfies RouteHandle,
       },
       {

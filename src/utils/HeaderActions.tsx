@@ -4,8 +4,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenu,
+  DropdownMenuGroup,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
-import { Plus, Filter, RefreshCw, ChevronDown, Trash2, Edit } from "lucide-react";
+import { Plus, RefreshCw, ChevronDown, Trash2, Edit, Ellipsis } from "lucide-react";
 
 export const HEADER_ACTIONS: Record<string, React.ReactNode> = {
   addDropdown: (
@@ -23,14 +26,37 @@ export const HEADER_ACTIONS: Record<string, React.ReactNode> = {
       </DropdownMenuContent>
     </DropdownMenu>
   ),
+
+  editProjectDropdown: (
+    <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button className="p-3" variant={"outline"}>
+              <Ellipsis size={16} />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel>Manage Project</DropdownMenuLabel>
+            <DropdownMenuSeparator/>
+            <DropdownMenuGroup>
+              <DropdownMenuItem>Rename Project</DropdownMenuItem>
+              <DropdownMenuItem>Project Settings</DropdownMenuItem>
+              <DropdownMenuItem>Manage members</DropdownMenuItem>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <DropdownMenuItem >
+                Archive Project
+              </DropdownMenuItem>
+              <DropdownMenuItem >
+                Delete Project
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+  ),
   add: (
     <Button>
       <Plus />
-    </Button>
-  ),
-  filter: (
-    <Button variant="outline">
-      <Filter />
     </Button>
   ),
   sync: (
