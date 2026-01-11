@@ -1,4 +1,5 @@
 import { Input } from "@/components/ui/input";
+import ShortcutHint from "@/components/ui/ShortcutHint";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useAuth } from "@/context/AuthContext";
 import { Search } from "lucide-react";
@@ -8,9 +9,17 @@ type PageHeaderProps = {
   title?: string;
   showSearch?: boolean;
   actions?: React.ReactNode;
+  handleClick: () => void;
+  isSearching: boolean;
 };
 
-const PageHeader = ({ title, showSearch, actions }: PageHeaderProps) => {
+const PageHeader = ({
+  title,
+  showSearch,
+  actions,
+  handleClick,
+  isSearching,
+}: PageHeaderProps) => {
   const { user } = useAuth();
   const location = useLocation();
 
@@ -21,6 +30,7 @@ const PageHeader = ({ title, showSearch, actions }: PageHeaderProps) => {
 
   const isHome = location.pathname === "/";
 
+
   return (
     <header className="sticky top-0 z-20 flex h-16 w-full items-center justify-between border-b bg-background px-6">
       <SidebarTrigger className="md:hidden"></SidebarTrigger>
@@ -29,11 +39,12 @@ const PageHeader = ({ title, showSearch, actions }: PageHeaderProps) => {
       </h1>
 
       <div className="flex items-center gap-2">
-        {showSearch && (
-          <div className="relative w-64">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder="Search…" className="pl-9" />
-        </div>
+        {showSearch && !isSearching && (
+          <div className="relative w-64" onClick={handleClick}>
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input placeholder="Search…" className="pl-9" />
+            <ShortcutHint/>
+          </div>
         )}
         {actions}
       </div>
