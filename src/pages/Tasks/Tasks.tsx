@@ -28,6 +28,7 @@ const Tasks = () => {
     { label: "Status", id: 2 },
     { label: "Priority", id: 3 },
     { label: "Due Date", id: 4 },
+    { label: "Project", id: 5}
   ];
 
   const { user } = useAuth();
