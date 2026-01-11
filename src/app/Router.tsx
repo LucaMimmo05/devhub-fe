@@ -102,6 +102,7 @@ const router = createBrowserRouter([
         element: <Commands />,
         handle: {
           title: "Commands",
+          header: {showSearch:true}
         } satisfies RouteHandle,
       },
       {

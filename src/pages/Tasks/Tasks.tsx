@@ -58,14 +58,14 @@ const Tasks = () => {
             options={STATUS_OPTIONS}
             value={statusFilter}
             onChange={setStatusFilter}
-            placeholder="Status"
+            placeholder="Filter By Status"
           />
 
           <DropdownFilter
             options={PRIORITY_OPTIONS}
             value={priorityFilter}
             onChange={setPriorityFilter}
-            placeholder="Priority"
+            placeholder="Filter By Priority"
           />
         </div>
 
