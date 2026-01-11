@@ -77,7 +77,7 @@ const router = createBrowserRouter([
         path: "tasks",
         element: <Tasks />,
         handle: {
-          title: "Tasks",
+          title: "Personal Tasks",
           header: { showSearch: true },
         } satisfies RouteHandle,
       },
