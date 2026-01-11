@@ -11,6 +11,7 @@ export const taskMock: TaskType[] = [
     createdAt: new Date("2024-10-01"),
     updatedAt: new Date("2024-10-03"),
     project: 1,
+    assignedTo: "d5186e4a-7bbb-43c5-af94-67d4d656ccfb"
   },
   {
     id: 2,
@@ -20,6 +21,7 @@ export const taskMock: TaskType[] = [
     createdAt: new Date("2024-10-01"),
     updatedAt: new Date("2024-10-02"),
     project: 1,
+    assignedTo: "d5186e4a-7bbb-43c5-af94-67d4d656ccfb"
   },
   {
     id: 3,
@@ -29,6 +31,7 @@ export const taskMock: TaskType[] = [
     createdAt: new Date("2024-09-29"),
     updatedAt: new Date("2024-10-02"),
     project: 1,
+    assignedTo: "d5186e4a-7bbb-43c5-af94-67d4d656ccfb"
   },
   {
     id: 4,
@@ -38,6 +41,7 @@ export const taskMock: TaskType[] = [
     createdAt: new Date("2024-09-25"),
     updatedAt: new Date("2024-09-30"),
     project: 1,
+    assignedTo: "d5186e4a-7bbb-43c5-af94-67d4d656ccfb"
   },
   {
     id: 5,
@@ -47,6 +51,7 @@ export const taskMock: TaskType[] = [
     createdAt: new Date("2024-09-28"),
     updatedAt: new Date("2024-10-03"),
     project: 1,
+    assignedTo: "d5186e4a-7bbb-43c5-af94-67d4d656ccfb"
   },
   {
     id: 6,
@@ -56,6 +61,7 @@ export const taskMock: TaskType[] = [
     createdAt: new Date("2024-09-28"),
     updatedAt: new Date("2024-10-03"),
     project: 1,
+    assignedTo: "d5186e4a-7bbb-43c5-af94-67d4d656ccfb"
   },
 ];
 

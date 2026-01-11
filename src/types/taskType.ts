@@ -6,6 +6,7 @@ export type TaskType = {
   createdAt: Date;
   updatedAt: Date;
   project: number;
+  assignedTo: string;
 };
 
 import type { ColumnDef } from "@tanstack/react-table";
