@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Member from "@/components/ui/Member";
+import NoData from "@/components/ui/NoData";
 import { Progress } from "@/components/ui/progress";
 import TaskTable from "@/components/ui/TaskTable";
 import PageContainer from "@/layouts/PageContainer";
@@ -11,9 +12,9 @@ import { ArrowLeft } from "lucide-react";
 import { useLoaderData, useNavigate } from "react-router-dom";
 
 export type HeaderType = {
-    label: string,
-    id: number
-  }
+  label: string;
+  id: number;
+};
 
 const ProjectDetails = () => {
   const { project } = useLoaderData() as {
@@ -34,10 +35,9 @@ const ProjectDetails = () => {
     { label: "Status", id: 2 },
     { label: "Priority", id: 3 },
     { label: "Due Date", id: 4 },
-    {label: "Assign To", id: 5}
+    { label: "Assign To", id: 5 },
   ];
 
-  
   return (
     <PageContainer className="flex flex-col min-h-screen lg:min-h-0 lg:h-full">
       <div className="flex flex-col lg:flex-row gap-6 flex-1 lg:min-h-0">
@@ -72,7 +72,12 @@ const ProjectDetails = () => {
             </CardHeader>
             <CardContent className="lg:flex-1 lg:min-h-0 lg:overflow-y-auto">
               <div className="overflow-x-auto">
-                <TaskTable columns={taskColumns} data={filteredTasks} header={taskHeader} hasAssignedTo />
+                <TaskTable
+                  columns={taskColumns}
+                  data={filteredTasks}
+                  header={taskHeader}
+                  hasAssignedTo
+                />
               </div>
             </CardContent>
           </Card>
@@ -83,9 +88,13 @@ const ProjectDetails = () => {
             <CardTitle>Members</CardTitle>
           </CardHeader>
           <CardContent className="lg:flex-1 lg:overflow-y-auto lg:min-h-0 space-y-3">
-            {filteredMembers.map((member) => (
-              <Member key={member.id} member={member} />
-            ))}
+            {filteredMembers.length > 0 ? (
+              filteredMembers.map((member) => (
+                <Member key={member.id} member={member} />
+              ))
+            ) : (
+              <NoData resource="Members"/>
+            )}
           </CardContent>
         </Card>
       </div>

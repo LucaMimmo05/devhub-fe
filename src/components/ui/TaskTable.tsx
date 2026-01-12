@@ -14,6 +14,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import type { HeaderType } from "@/pages/ProjectDetails/ProjectDetails";
 import { cn } from "@/lib/utils";
 import { projectMock } from "@/mock/dashboard-mock";
+import NoData from "./NoData";
 type TasksProps = {
   data: TaskType[];
   columns: ColumnDef<TaskType>[];
@@ -35,10 +36,10 @@ const TaskTable = ({
   const [tasks, setTasks] = useState<TaskType[] | undefined>(data);
 
   const renderProject = (id: number) => {
-    if(!id) return null;
+    if (!id) return null;
 
-    const project = projectMock.find((project) => project.id === id)
-    return project?.name
+    const project = projectMock.find((project) => project.id === id);
+    return project?.name;
   };
 
   return (
@@ -67,7 +68,9 @@ const TaskTable = ({
                     </TableCell>
                   )}
 
-                  <TableCell className="p-3"><p>{task.title}</p></TableCell>
+                  <TableCell className="p-3">
+                    <p>{task.title}</p>
+                  </TableCell>
 
                   <TableCell>
                     <PriorityBadge data={task.status}>
@@ -93,15 +96,20 @@ const TaskTable = ({
                   {hasAssignedTo && <TableCell>{task.assignedTo}</TableCell>}
 
                   {hasProject && (
-                    <TableCell><p>{renderProject(task.project)}</p></TableCell>
+                    <TableCell>
+                      <p>{renderProject(task.project)}</p>
+                    </TableCell>
                   )}
                 </TableRow>
               );
             })
           ) : (
-            <TableRow>
-              <TableCell colSpan={data.length} className="h-24 text-center">
-                No results.
+            <TableRow className="h-24 hover:bg-transparent ">
+              <TableCell
+                colSpan={header.length}
+                className="text-center align-middle"
+              >
+                <NoData resource="Tasks"/>
               </TableCell>
             </TableRow>
           )}
