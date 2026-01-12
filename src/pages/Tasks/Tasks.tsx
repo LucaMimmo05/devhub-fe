@@ -71,7 +71,7 @@ const Tasks = () => {
 
         {isFiltered && (
           <Button
-            variant={"outline"}
+            variant={"destructive"}
             onClick={() => {
               setStatusFilter(undefined);
               setPriorityFilter(undefined);
@@ -89,6 +89,7 @@ const Tasks = () => {
         header={taskHeader}
         hasCheckbok
         hasBorder
+        hasProject
       />
     </PageContainer>
   );

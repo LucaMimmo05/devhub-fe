@@ -13,6 +13,7 @@ import PriorityBadge from "./PriorityBadge";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { HeaderType } from "@/pages/ProjectDetails/ProjectDetails";
 import { cn } from "@/lib/utils";
+import { projectMock } from "@/mock/dashboard-mock";
 type TasksProps = {
   data: TaskType[];
   columns: ColumnDef<TaskType>[];
@@ -20,6 +21,7 @@ type TasksProps = {
   hasCheckbok?: boolean;
   hasAssignedTo?: boolean;
   hasBorder?: boolean;
+  hasProject?: boolean;
 };
 
 const TaskTable = ({
@@ -27,14 +29,25 @@ const TaskTable = ({
   header,
   hasCheckbok,
   hasAssignedTo,
-  hasBorder
+  hasBorder,
+  hasProject,
 }: TasksProps) => {
   const [tasks, setTasks] = useState<TaskType[] | undefined>(data);
 
-  return (
-    <div className={cn("overflow-x-auto rounded-md", hasBorder && "border border-border")
+  const renderProject = (id: number) => {
+    if(!id) return null;
 
-    }>
+    const project = projectMock.find((project) => project.id === id)
+    return project?.name
+  };
+
+  return (
+    <div
+      className={cn(
+        "overflow-x-auto rounded-md",
+        hasBorder && "border border-border"
+      )}
+    >
       <Table className="min-w-150 table-auto ">
         <TableHeader>
           <TableRow>
@@ -54,28 +67,34 @@ const TaskTable = ({
                     </TableCell>
                   )}
 
-                  <TableCell className="p-3">{task.title}</TableCell>
+                  <TableCell className="p-3"><p>{task.title}</p></TableCell>
 
                   <TableCell>
                     <PriorityBadge data={task.status}>
-                      {task.status}
+                      <p>{task.status}</p>
                     </PriorityBadge>
                   </TableCell>
 
                   <TableCell>
                     <PriorityBadge data={task.priority}>
-                      {task.priority}
+                      <p>{task.priority}</p>
                     </PriorityBadge>
                   </TableCell>
 
                   <TableCell>
-                    {task.updatedAt.toLocaleDateString("en-GB", {
-                      day: "2-digit",
-                      month: "short",
-                      year: "numeric",
-                    })}
+                    <p>
+                      {task.updatedAt.toLocaleDateString("en-GB", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </p>
                   </TableCell>
                   {hasAssignedTo && <TableCell>{task.assignedTo}</TableCell>}
+
+                  {hasProject && (
+                    <TableCell><p>{renderProject(task.project)}</p></TableCell>
+                  )}
                 </TableRow>
               );
             })
