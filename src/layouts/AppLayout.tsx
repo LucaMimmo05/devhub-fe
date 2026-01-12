@@ -36,12 +36,12 @@ const AppLayout = () => {
     if (!isSearching) return;
 
     const handleEscEvent = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
+      const isCtrlOrCmd = event.ctrlKey || event.metaKey;
+
+      if (event.key === "Escape" || (isCtrlOrCmd && event.key.toLowerCase() === "k")) {
         setIsSearching(false);
       }
     };
-
-    
 
     window.addEventListener("keydown", handleEscEvent);
 
@@ -51,22 +51,21 @@ const AppLayout = () => {
   }, [isSearching]);
 
   useEffect(() => {
-  const handleKeyDown = (event: KeyboardEvent) => {
-    const isCtrlOrCmd = event.ctrlKey || event.metaKey;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const isCtrlOrCmd = event.ctrlKey || event.metaKey;
 
-    if (isCtrlOrCmd && event.key.toLowerCase() === "k") {
-      event.preventDefault();
-      setIsSearching(true);
-    }
-  };
+      if (isCtrlOrCmd && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setIsSearching(true);
+      }
+    };
 
-  window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
 
-  return () => {
-    window.removeEventListener("keydown", handleKeyDown);
-  };
-}, []);
-
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
 
   return (
     <SidebarProvider>
@@ -86,7 +85,13 @@ const AppLayout = () => {
             isSearching={isSearching}
           />
           <div className="flex-1 overflow-y-auto overflow-x-hidden">
-            {isSearching && <SearchCommand onClose={()=> {setIsSearching(false)}} />}
+            {isSearching && (
+              <SearchCommand
+                onClose={() => {
+                  setIsSearching(false);
+                }}
+              />
+            )}
             <Outlet />
           </div>
         </main>

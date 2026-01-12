@@ -5,8 +5,14 @@ import { Button } from "./button";
 
 const SearchCommand = ({ onClose }: { onClose: () => void }) => {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-10">
-      <Command className="w-full max-w-xl max-h-[50vh] rounded-xl border bg-popover shadow-lg overflow-hidden flex flex-col relative">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-10"
+      onClick={onClose}
+    >
+      <Command
+        className="w-full max-w-xl max-h-[50vh] rounded-xl border bg-popover shadow-lg overflow-hidden flex flex-col relative"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex justify-between items-center w-full border-b">
           <CommandInput
             autoFocus
