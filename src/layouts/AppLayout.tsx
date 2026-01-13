@@ -3,25 +3,31 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import AppSidebar from "./AppSidebar";
 import PageHeader from "./PageHeader";
 import type { RouteHandle } from "@/app/Router";
-import { HEADER_ACTIONS } from "@/utils/HeaderActions";
+import { getHeaderActions } from "@/utils/HeaderActions";
 import { useEffect, useState } from "react";
 import SearchCommand from "@/components/ui/SearchCommand";
+import { HeaderActionsProvider } from "@/context/HeaderActionsContext";
+
+type CurrentMatch<TData = unknown> = {
+  handle?: RouteHandle<TData>;
+  data?: TData;
+  params: Record<string, string>;
+};
 
 const AppLayout = () => {
-  type CurrentMatch<TData = unknown> = {
-    handle?: RouteHandle<TData>;
-    data?: TData;
-    params: Record<string, string>;
-  };
+  const [onCreate, setOnCreate] = useState<(() => void) | undefined>();
 
   const matches = useMatches() as CurrentMatch<{
     project?: { name: string };
   }>[];
   const current = matches[matches.length - 1];
+  const headerActions = getHeaderActions({
+    onCreateProject: () => onCreate?.(),
+  });
 
   const handle = current?.handle as RouteHandle | undefined;
   const actionIds = handle?.header?.actions ?? [];
-  const actions = actionIds.map((id) => HEADER_ACTIONS[id]).filter(Boolean);
+  const actions = actionIds.map((id) => headerActions[id]).filter(Boolean);
 
   let title = "";
   if (current?.handle?.title) {
@@ -38,7 +44,10 @@ const AppLayout = () => {
     const handleEscEvent = (event: KeyboardEvent) => {
       const isCtrlOrCmd = event.ctrlKey || event.metaKey;
 
-      if (event.key === "Escape" || (isCtrlOrCmd && event.key.toLowerCase() === "k")) {
+      if (
+        event.key === "Escape" ||
+        (isCtrlOrCmd && event.key.toLowerCase() === "k")
+      ) {
         setIsSearching(false);
       }
     };
@@ -75,25 +84,22 @@ const AppLayout = () => {
         </aside>
 
         <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-          <PageHeader
-            title={title}
-            showSearch={handle?.header?.showSearch}
-            actions={actions}
-            handleClick={() => {
-              setIsSearching(true);
-            }}
-            isSearching={isSearching}
-          />
-          <div className="flex-1 overflow-y-auto overflow-x-hidden">
-            {isSearching && (
-              <SearchCommand
-                onClose={() => {
-                  setIsSearching(false);
-                }}
-              />
-            )}
-            <Outlet />
-          </div>
+          <HeaderActionsProvider value={{ setOnCreate }}>
+            <PageHeader
+              title={title}
+              showSearch={handle?.header?.showSearch}
+              actions={actions}
+              handleClick={() => setIsSearching(true)}
+              isSearching={isSearching}
+            />
+
+            <div className="flex-1 overflow-y-auto overflow-x-hidden">
+              {isSearching && (
+                <SearchCommand onClose={() => setIsSearching(false)} />
+              )}
+              <Outlet />
+            </div>
+          </HeaderActionsProvider>
         </main>
       </div>
     </SidebarProvider>

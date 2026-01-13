@@ -4,74 +4,64 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenu,
-  DropdownMenuGroup,
-  DropdownMenuSeparator,
-  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
-import { Plus, RefreshCw, ChevronDown, Trash2, Edit, Ellipsis } from "lucide-react";
+import { Plus, RefreshCw, ChevronDown, Trash2, Edit } from "lucide-react";
 
-export const HEADER_ACTIONS: Record<string, React.ReactNode> = {
+interface HeaderActionsHandlers {
+  onCreateProject?: () => void;
+  onCreateTask?: () => void;
+  onSync?: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
+}
+
+
+export const getHeaderActions = (
+  handlers: HeaderActionsHandlers
+): Record<string, React.ReactNode> => ({
   addDropdown: (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="default">
+        <Button>
           Create New <ChevronDown className="ml-1" size={16} />
         </Button>
       </DropdownMenuTrigger>
+
       <DropdownMenuContent>
-        <DropdownMenuItem>Project</DropdownMenuItem>
-        <DropdownMenuItem>Task</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handlers.onCreateProject?.()}>
+          Project
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handlers.onCreateTask?.()}>
+          Task
+        </DropdownMenuItem>
         <DropdownMenuItem>Command</DropdownMenuItem>
         <DropdownMenuItem>Note</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   ),
 
-  editProjectDropdown: (
-    <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button className="p-3" variant={"outline"}>
-              <Ellipsis size={16} />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>Manage Project</DropdownMenuLabel>
-            <DropdownMenuSeparator/>
-            <DropdownMenuGroup>
-              <DropdownMenuItem>Rename Project</DropdownMenuItem>
-              <DropdownMenuItem>Project Settings</DropdownMenuItem>
-              <DropdownMenuItem>Manage members</DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem >
-                Archive Project
-              </DropdownMenuItem>
-              <DropdownMenuItem >
-                Delete Project
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
-  ),
   add: (
-    <Button>
+    <Button onClick={handlers.onCreateProject}>
       <Plus />
     </Button>
   ),
+
   sync: (
-    <Button variant="outline">
+    <Button variant="outline" onClick={() => handlers.onSync?.()}>
       <RefreshCw />
     </Button>
   ),
+
   edit: (
-    <Button variant="outline">
-      <Edit/>
+    <Button variant="outline" onClick={handlers.onEdit}>
+      <Edit />
     </Button>
   ),
+
   delete: (
-    <Button variant="destructive">
-        <Trash2/>
+    <Button variant="destructive" onClick={handlers.onDelete}>
+      <Trash2 />
     </Button>
   ),
-};
+});
+
