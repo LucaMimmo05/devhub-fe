@@ -13,7 +13,6 @@ import PriorityBadge from "./PriorityBadge";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { HeaderType } from "@/pages/ProjectDetails/ProjectDetails";
 import { cn } from "@/lib/utils";
-import { projectMock } from "@/mock/dashboard-mock";
 import NoData from "./NoData";
 type TasksProps = {
   data: TaskType[];
@@ -38,8 +37,7 @@ const TaskTable = ({
   const renderProject = (id: number) => {
     if (!id) return null;
 
-    const project = projectMock.find((project) => project.id === id);
-    return project?.name;
+    return null;
   };
 
   return (
@@ -49,7 +47,7 @@ const TaskTable = ({
         hasBorder && "border border-border"
       )}
     >
-      <Table className="min-w-150 table-auto ">
+      <Table className="min-w-150 table-auto bg-card">
         <TableHeader>
           <TableRow>
             {header.map((head) => {
