@@ -1,5 +1,4 @@
 import type { MemberType } from "@/types/memberType";
-import type { ProjectType } from "@/types/projectType";
 import type { TaskType } from "@/types/taskType";
 
 export const taskMock: TaskType[] = [
