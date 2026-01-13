@@ -45,7 +45,7 @@ const DropdownFilter = ({
         <Button
           variant="outline"
           role="combobox"
-          className={cn(width, "justify-between flex-1 lg:flex-[unset]")}
+          className={cn(width, "justify-between flex-1 lg:flex-[unset] border-dashed")}
         >
           {selected ? selected.label : placeholder}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />

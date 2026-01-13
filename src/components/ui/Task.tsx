@@ -1,22 +1,12 @@
-import { projectMock } from "@/mock/dashboard-mock";
 import { Checkbox } from "./checkbox";
 import PriorityBadge from "./PriorityBadge";
+import type { TaskType } from "@/types/taskType";
 
-export type TaskProps = {
-  task: {
-    id: number;
-    title: string;
-    status: "Pending" | "In Progress" | "Completed";
-    priority: "Low" | "Medium" | "High";
-    createdAt: Date;
-    updatedAt: Date;
-    project: number;
-  };
-  key: number;
-};
+type TaskProps = {
+  task: TaskType
+}
 
 const Task = ({ task }: TaskProps) => {
-  const project = projectMock.find((project)=> project.id === task.project)
   return (
     <div key={`${task.id}`} className="flex items-start gap-3">
       <Checkbox className="rounded mt-2 shrink-0" />
@@ -26,7 +16,7 @@ const Task = ({ task }: TaskProps) => {
           <PriorityBadge data={task.priority}>{task.priority}</PriorityBadge>
         </div>
         <p className="text-xs md:text-sm text-muted-foreground">
-          {project?.name}
+          {/* {project?.title} */}
         </p>
       </div>
     </div>
