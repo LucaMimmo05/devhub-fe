@@ -94,18 +94,15 @@
 }
 
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 5px;
+  height: 5px;
 }
 
-::-webkit-scrollbar-track {
-  background: var(--color-muted);
-}
+
 
 ::-webkit-scrollbar-thumb {
   background: var(--color-primary); 
-  border-radius: var(--radius-lg); 
-  border: 3px solid var(--color-muted); 
+  border-radius: var(--radius-lg);
 }
 
 ::-webkit-scrollbar-thumb:hover {
