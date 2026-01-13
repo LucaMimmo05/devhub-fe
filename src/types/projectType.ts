@@ -1,10 +1,16 @@
+import type { Priority, Status } from "./PriorityAndStatusType";
+import type { ProjectMemberType } from "./projectMemberType";
+import type { UserProfileType } from "./userProfileType";
+
 export type ProjectType = {
-    id: number;
-    name: string;
-    description: string;
-    status: "Pending" | "In Progress" | "Completed";
-    tasksCount: number;
-    progress: number;
-    membersNumber: number;
-    dueDate: Date;
+  id: string;                   
+  title: string;
+  description: string;
+  imgUrl?: string;
+  status: Status;
+  priority: Priority;
+  dueDate?: Date;            
+  owner: UserProfileType;
+  members: ProjectMemberType[];
+  progress: number;
 };

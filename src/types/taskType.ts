@@ -1,8 +1,8 @@
 export type TaskType = {
   id: number;
   title: string;
-  status: "Pending" | "In Progress" | "Completed";
-  priority: "Low" | "Medium" | "High";
+  status: Status;
+  priority: Priority;
   createdAt: Date;
   updatedAt: Date;
   project: number;
@@ -10,6 +10,7 @@ export type TaskType = {
 };
 
 import type { ColumnDef } from "@tanstack/react-table";
+import type { Priority, Status } from "./PriorityAndStatusType";
 
 export const taskColumns: ColumnDef<TaskType>[] = [
   {
