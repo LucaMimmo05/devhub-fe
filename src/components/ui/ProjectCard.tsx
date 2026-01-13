@@ -23,13 +23,13 @@ import { useNavigate } from "react-router-dom";
 import type { ProjectType } from "@/types/projectType";
 
 export type ProjectProps = {
-  project: ProjectType
-}
+  project: ProjectType;
+};
 
 const ProjectCard = ({ project }: ProjectProps) => {
   const navigate = useNavigate();
   return (
-    <Card className="xl:min-w-120 min-w-100 flex-1 lg:max-w-[calc(50%-1rem)]">
+    <Card className="flex flex-col h-full hover:border-[#1091F3] hover:shadow-md transition-all duration-200 cursor-pointer">
       <CardHeader className="flex  flex-row justify-between items-center pb-3">
         <div className="flex flex-row gap-4 items-center">
           <img
@@ -40,7 +40,7 @@ const ProjectCard = ({ project }: ProjectProps) => {
             alt=""
           />
           <div className="space-y-1">
-            <CardTitle>{project.name}</CardTitle>
+            <CardTitle>{project.title}</CardTitle>
             <CardDescription className="hidden sm:block md:texty-base text-sm">
               {project.description}
             </CardDescription>
@@ -70,7 +70,7 @@ const ProjectCard = ({ project }: ProjectProps) => {
       <CardContent className="space-x-3 pb-2">
         <PriorityBadge data={project.status}>{project.status}</PriorityBadge>
         <Badge variant="outline" className="hover:bg-inset text-xs shrink-0">
-          {project.tasksCount} Tasks
+          0 Tasks
         </Badge>
       </CardContent>
       <CardFooter className="flex-col">
@@ -79,11 +79,15 @@ const ProjectCard = ({ project }: ProjectProps) => {
           <div className="flex items-center gap-2">
             <Calendar size={16} />
             <p className="text-muted-foreground text-sm">
-              {project.dueDate.toLocaleDateString("en-GB", {
-                day: "2-digit",
-                month: "short",
-                year: "numeric",
-              })}
+              {project.dueDate ? (
+                project?.dueDate?.toLocaleDateString("en-GB", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })
+              ) : (
+                <p className="text-muted-foreground text-sm">No Due Date</p>
+              )}
             </p>
           </div>
           <Button
@@ -92,7 +96,7 @@ const ProjectCard = ({ project }: ProjectProps) => {
             className="hover:bg-inset cursor-pointer px-2 ml-auto"
             onClick={() => navigate(`/projects/${project.id}`)}
           >
-            Go To {project.name}
+            Go To {project.title}
             <ArrowRight size={16} />
           </Button>
         </div>
