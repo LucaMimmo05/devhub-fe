@@ -6,8 +6,8 @@ export const taskMock: TaskType[] = [
   {
     id: 1,
     title: "Design new landing page",
-    status: "In Progress",
-    priority: "Medium",
+    status: "IN_PROGRESS",
+    priority: "MEDIUM",
     createdAt: new Date("2024-10-01"),
     updatedAt: new Date("2024-10-03"),
     project: 1,
@@ -16,8 +16,8 @@ export const taskMock: TaskType[] = [
   {
     id: 2,
     title: "Fix login bug",
-    status: "Pending",
-    priority: "High",
+    status: "PENDING",
+    priority: "HIGH",
     createdAt: new Date("2024-10-01"),
     updatedAt: new Date("2024-10-02"),
     project: 1,
@@ -26,8 +26,8 @@ export const taskMock: TaskType[] = [
   {
     id: 3,
     title: "Implement task filters",
-    status: "In Progress",
-    priority: "Medium",
+    status: "IN_PROGRESS",
+    priority: "MEDIUM",
     createdAt: new Date("2024-09-29"),
     updatedAt: new Date("2024-10-02"),
     project: 1,
@@ -36,8 +36,8 @@ export const taskMock: TaskType[] = [
   {
     id: 4,
     title: "Optimize database queries",
-    status: "Completed",
-    priority: "Low",
+    status: "COMPLETED",
+    priority: "LOW",
     createdAt: new Date("2024-09-25"),
     updatedAt: new Date("2024-09-30"),
     project: 1,
@@ -46,8 +46,8 @@ export const taskMock: TaskType[] = [
   {
     id: 5,
     title: "Setup CI/CD pipeline",
-    status: "In Progress",
-    priority: "High",
+    status: "IN_PROGRESS",
+    priority: "HIGH",
     createdAt: new Date("2024-09-28"),
     updatedAt: new Date("2024-10-03"),
     project: 1,
@@ -57,8 +57,8 @@ export const taskMock: TaskType[] = [
   {
     id: 6,
     title: "Perform code review for feature X",
-    status: "In Progress",
-    priority: "High",
+    status: "IN_PROGRESS",
+    priority: "HIGH",
     createdAt: new Date("2024-09-28"),
     updatedAt: new Date("2024-10-03"),
     project: 1,
@@ -117,38 +117,6 @@ export const githubActivityMock = [
   },
 ];
 
-export const projectMock: ProjectType[] = [
-  {
-    id: 1,
-    name: "Project Alpha",
-    description: "A new marketing website",
-    status: "In Progress",
-    tasksCount: 12,
-    progress: 65,
-    membersNumber: 5,
-    dueDate: new Date("2024-12-31"),
-  },
-  {
-    id: 2,
-    name: "Project Beta",
-    description: "Mobile app development",
-    status: "Completed",
-    tasksCount: 8,
-    progress: 100,
-    membersNumber: 3,
-    dueDate: new Date("2024-11-15"),
-  },
-  {
-    id: 3,
-    name: "Project Gamma",
-    description: "Backend API overhaul",
-    status: "Pending",
-    tasksCount: 15,
-    progress: 20,
-    membersNumber: 7,
-    dueDate: new Date("2025-01-20"),
-  },
-];
 
 export const membersMock: MemberType[] = [
   {
