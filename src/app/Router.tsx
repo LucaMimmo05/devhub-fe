@@ -16,7 +16,6 @@ import Login from "@/pages/Authentication/Login";
 import Register from "@/pages/Authentication/Register";
 import NotFound from "@/pages/NotFound/NotFound";
 import ProjectDetails from "@/pages/ProjectDetails/ProjectDetails";
-import { projectMock } from "@/mock/dashboard-mock";
 
 export type RouteHandle<TData = unknown> = {
   title?: string | ((params: Record<string, string>, data?: TData) => string);
@@ -28,13 +27,15 @@ export type RouteHandle<TData = unknown> = {
 
 const router = createBrowserRouter([
   {
+    path:"/auth",
     element: <AuthLayout />,
     children: [
-      { path: "/auth/login", element: <Login /> },
-      { path: "/auth/register", element: <Register /> },
+      { path: "login", element: <Login /> },
+      { path: "register", element: <Register /> },
     ],
   },
   {
+    path: "/",
     element: (
       <PrivateRoute>
         <AppLayout />
@@ -59,16 +60,15 @@ const router = createBrowserRouter([
       {
         path: "projects/:projectId",
         element: <ProjectDetails />,
-        loader: async ({ params }) => {
-          const project = projectMock.find(
-            (p) => p.id.toString() === params.projectId
-          );
-          if (!project) throw new Response("Not Found", { status: 404 });
-          return { project };
+        loader: async () => {
+          return null;
         },
         handle: {
           title: "Overview",
-          header: { showSearch: false, actions: ["add","editProjectDropdown"] },
+          header: {
+            showSearch: false,
+            actions: ["add", "editProjectDropdown"],
+          },
         } satisfies RouteHandle<{
           project: { id: number; name: string; description: string };
         }>,
@@ -102,7 +102,7 @@ const router = createBrowserRouter([
         element: <Commands />,
         handle: {
           title: "Commands",
-          header: {showSearch:true}
+          header: { showSearch: true },
         } satisfies RouteHandle,
       },
       {
