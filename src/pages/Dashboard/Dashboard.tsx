@@ -43,32 +43,29 @@ const Dashboard = () => {
               </CardDescription>
             </CardHeader>
           </Card>
-          <div className="shrink-0 md:flex hidden flex-col gap-4">
+          <div className="shrink-0 md:flex hidden flex-col gap-4 xl:gap-2">
             <div className="flex gap-0.5 flex-col shrink-0">
-              <CardTitle className="text-base md:text-lg">
+              <CardTitle className="text-base md:text-lg xl:text-base">
                 Here's the latest projects
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="xl:text-sm">
                 Check out the progress on your current projects.
               </CardDescription>
             </div>
-            <div className="flex flex-wrap flex-col gap-6 md:flex-row min-h-0">
+            <div className="flex flex-wrap flex-col gap-6 md:flex-row xl:gap-4 min-h-0">
               {previewProjects && previewProjects.length > 1 ? (
                 previewProjects.slice(0, 2).map((project) => {
                   return <ProjectOverview key={project.id} project={project} />;
                 })
               ) : (
-                <Card className="hidden md:flex w-full flex-col items-center justify-center p-6 border-dashed shadow-none bg-muted/10 h-64">
-                  <div className="flex flex-col items-center gap-2 text-center">
-                    <FolderGit2 className="h-10 w-10 text-muted-foreground/50" />
-                    <h3 className="font-semibold text-lg mt-2">
+                <Card className="hidden md:flex w-full flex-col items-center justify-center p-6 border-dashed shadow-none bg-muted/10 h-64 xl:h-40 xl:p-4">
+                  <div className="flex flex-col items-center gap-2 text-center xl:gap-1">
+                    <FolderGit2 className="h-10 w-10 text-muted-foreground/50 xl:h-6 xl:w-6" />
+                    <h3 className="font-semibold text-lg mt-2 xl:text-base xl:mt-1">
                       No projects found
                     </h3>
-                    <p className="text-sm text-muted-foreground max-w-62.5">
-                      You haven't created any projects yet. Start by creating
-                      your first project.
-                    </p>
-                    <Button className="mt-4" size="sm" asChild>
+
+                    <Button className="mt-4 xl:mt-2" size="sm" asChild>
                       <Link to="/projects">
                         <Plus className="mr-2 h-4 w-4" />
                         Create Project
