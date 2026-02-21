@@ -15,7 +15,7 @@ import Settings from "@/pages/Settings/Settings";
 import Login from "@/pages/Authentication/Login";
 import Register from "@/pages/Authentication/Register";
 import NotFound from "@/pages/NotFound/NotFound";
-import ProjectDetails from "@/pages/ProjectDetails/ProjectDetails";
+import ProjectDetails, { projectDetailsLoader } from "@/pages/ProjectDetails/ProjectDetails";
 
 export type RouteHandle<TData = unknown> = {
   title?: string | ((params: Record<string, string>, data?: TData) => string);
@@ -60,8 +60,8 @@ const router = createBrowserRouter([
       {
         path: "projects/:projectId",
         element: <ProjectDetails />,
-        loader: async () => {
-          return null;
+        loader: async (args) => {
+          return projectDetailsLoader(args);
         },
         handle: {
           title: "Overview",

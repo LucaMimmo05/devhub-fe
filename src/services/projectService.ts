@@ -11,3 +11,8 @@ export const createProject = async (project : ProjectRequest) => {
     const response = await mainCallApi.post("/projects",project);
     return response.data;
 }
+
+export const getProjectById = async (projectId: string) => {
+  const response = await mainCallApi.get(`/projects/${projectId}`);
+  return response.data;
+}

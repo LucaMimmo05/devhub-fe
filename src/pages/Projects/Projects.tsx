@@ -92,15 +92,17 @@ const Projects = () => {
 
   return (
     <PageContainer>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-        {projects.length > 0 ? (
-          projects.map((project) => (
+      {projects.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+          {projects.map((project) => (
             <ProjectCard key={project.id} project={project} />
-          ))
-        ) : (
+          ))}
+        </div>
+      ) : (
+        <div className="relative w-full h-[calc(100vh-200px)] flex justify-center items-center">
           <NoData resource="Projects" />
-        )}
-      </div>
+        </div>
+      )}
 
       <Modal
         open={openModal}
@@ -167,17 +169,7 @@ const Projects = () => {
           </div>
 
           <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="imgUrl">Image URL</Label>
-              <Input
-                id="imgUrl"
-                type="url"
-                value={imgUrl}
-                onChange={(e) => setImgUrl(e.target.value)}
-                placeholder="Enter image URL"
-              />
-            </div>
-
+          
             <div className="flex flex-col gap-2">
               <Label htmlFor="imageFile">Upload Image</Label>
               <Input
@@ -212,9 +204,9 @@ const Projects = () => {
                   <SelectValue placeholder="Select priority" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="LOW">LOW</SelectItem>
-                  <SelectItem value="MEDIUM">MEDIUM</SelectItem>
-                  <SelectItem value="HIGH">HIGH</SelectItem>
+                  <SelectItem value="LOW">Low</SelectItem>
+                  <SelectItem value="MEDIUM">Medium</SelectItem>
+                  <SelectItem value="HIGH">High</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -229,9 +221,9 @@ const Projects = () => {
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="PENDING">PENDING</SelectItem>
-                  <SelectItem value="IN_PROGRESS">IN_PROGRESS</SelectItem>
-                  <SelectItem value="COMPLETED">COMPLETED</SelectItem>
+                  <SelectItem value="PENDING">Pending</SelectItem>
+                  <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                  <SelectItem value="COMPLETED">Completed</SelectItem>
                 </SelectContent>
               </Select>
             </div>

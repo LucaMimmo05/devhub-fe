@@ -6,15 +6,28 @@ import { Progress } from "@/components/ui/progress";
 import TaskTable from "@/components/ui/TaskTable";
 import PageContainer from "@/layouts/PageContainer";
 import { membersMock, taskMock } from "@/mock/dashboard-mock";
+import { getProjectById } from "@/services/projectService";
 import type { ProjectType } from "@/types/projectType";
 import { taskColumns } from "@/types/taskType";
 import { ArrowLeft } from "lucide-react";
-import { useLoaderData, useNavigate } from "react-router-dom";
+import { useLoaderData, useNavigate, type LoaderFunctionArgs } from "react-router-dom";
 
 export type HeaderType = {
   label: string;
   id: number;
 };
+
+export async function projectDetailsLoader({
+  params,
+}: LoaderFunctionArgs) {
+  if (!params.projectId) {
+    throw new Response("Not Found", { status: 404 });
+  }
+
+  return {
+    project: await getProjectById(params.projectId),
+  };
+}
 
 const ProjectDetails = () => {
   const { project } = useLoaderData() as {
@@ -52,7 +65,7 @@ const ProjectDetails = () => {
                 <ArrowLeft />
               </Button>
               <div className="flex flex-col gap-0.5">
-                <h1 className="text-2xl">{project?.name}</h1>
+                <h1 className="text-2xl">{project?.title}</h1>
                 <p className="text-muted-foreground text-sm">
                   {project?.description}
                 </p>
