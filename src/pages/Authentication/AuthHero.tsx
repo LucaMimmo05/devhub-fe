@@ -1,7 +1,7 @@
 import { Separator } from "@/components/ui/separator"
 const AuthHero = () => {
   return (
-     <div className="space-y-6 hidden md:flex flex-col max-w-md ">
+     <div className="space-y-3 hidden md:flex flex-col max-w-md ">
 
       <h1 className="text-6xl font-semibold tracking-tight">
         Hi, Hello!
@@ -12,9 +12,9 @@ const AuthHero = () => {
         <span className="text-primary font-semibold"> One developer hub.</span>
       </p>
 
-      <Separator className="w-full" />
+      <Separator className="w-full mb-3" />
 
-      <p className="xl:max-w-md text-sm leading-relaxed text-muted-foreground">
+      <p className=" xl:max-w-md text-sm leading-relaxed text-muted-foreground">
         DevHub is a modern developer dashboard for managing projects,
         tasks, and daily workflow in one place.
       </p>
