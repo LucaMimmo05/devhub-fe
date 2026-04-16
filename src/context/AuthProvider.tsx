@@ -2,6 +2,7 @@ import {
   refresh,
   login as loginService,
   logout as logoutService,
+  register as registerService,
 } from "@/services/authService";
 import axios from "axios";
 import { useEffect, useState, useRef, type ReactNode } from "react";
@@ -39,6 +40,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.error("Login failed:", error);
       throw error;
     }
+  };
+
+  const register = async (fullName: string, username: string, email: string, password: string) => {
+    setStatus("loading");
+    try {
+      const data = await registerService(fullName, username, email, password);
+      localStorage.setItem("accessToken", data.accessToken);
+      if (data.userProfile) {
+        localStorage.setItem("userData", JSON.stringify(data.userProfile));
+        setUser(JSON.parse(JSON.stringify(data.userProfile)));
+      }
+      axios.defaults.headers.common["Authorization"] = `Bearer ${data.accessToken}`;
+      setStatus("authenticated");
+    } catch (error) {
+      setStatus("unauthenticated");
+      throw error;
+    }
+  };
+
+  const updateUser = (partial: Partial<User>) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const updated = { ...prev, ...partial };
+      localStorage.setItem("userData", JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const logout = async () => {
@@ -112,7 +139,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     user,
     refreshAuth,
     login,
+    register,
     logout,
+    updateUser,
   };
   return (
     <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>

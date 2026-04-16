@@ -14,6 +14,11 @@ export const login = async (email: string, password: string) => {
   return response.data;
 };
 
+export const register = async (fullName: string, username: string, email: string, password: string) => {
+  const response = await authApi.post(`/auth/register`, { fullName, username, email, password });
+  return response.data;
+};
+
 export const refresh = async () => {
   const response = await authApi.post(`/auth/refresh`);
   return response.data;

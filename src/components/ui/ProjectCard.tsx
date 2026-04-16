@@ -1,4 +1,8 @@
+import type { ProjectType } from "@/types/projectType";
 import { ArrowRight, Calendar, Ellipsis } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Badge } from "./badge";
+import { Button } from "./button";
 import {
   Card,
   CardContent,
@@ -15,12 +19,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./dropdown-menu";
-import { Button } from "./button";
 import PriorityBadge from "./PriorityBadge";
-import { Badge } from "./badge";
 import { Separator } from "./separator";
-import { useNavigate } from "react-router-dom";
-import type { ProjectType } from "@/types/projectType";
 
 export type ProjectProps = {
   project: ProjectType;
@@ -79,15 +79,15 @@ const ProjectCard = ({ project }: ProjectProps) => {
           <div className="flex items-center gap-2">
             <Calendar size={16} />
             <p className="text-muted-foreground text-sm">
-              {project.dueDate ? (
-                project?.dueDate?.toLocaleDateString("en-GB", {
-                  day: "2-digit",
-                  month: "short",
-                  year: "numeric",
-                })
-              ) : (
-                <p className="text-muted-foreground text-sm">No Due Date</p>
-              )}
+              {project?.dueDate ? (
+  new Date(project.dueDate).toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  })
+) : (
+  <p className="text-muted-foreground text-sm">No Due Date</p>
+)}
             </p>
           </div>
           <Button

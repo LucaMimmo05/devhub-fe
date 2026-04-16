@@ -1,28 +1,39 @@
 import type { Priority, Status } from "./PriorityAndStatusType";
-import type { ProjectMemberType } from "./projectMemberType";
-import type { UserProfileType } from "./userProfileType";
+
+export type ProjectMemberSummary = {
+  profileId: string;
+  username: string;
+  firstName: string;
+  lastName: string;
+  avatarUrl?: string;
+  role: "OWNER" | "MEMBER";
+};
 
 export type ProjectType = {
   id: string;
   title: string;
   description: string;
-  imgUrl?: string;
+  imageUrl?: string;
   status: Status;
   priority: Priority;
-  dueDate?: Date;
-  owner: UserProfileType;
-  members: ProjectMemberType[];
+  dueDate?: string;
+  ownerId: string;
+  ownerUsername?: string;
+  ownerAvatarUrl?: string;
+  members: ProjectMemberSummary[];
   progress: number;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 export type ProjectRequest = {
   title: string;
   description: string;
-  imgUrl?: string;
+  imageUrl?: string;
   status: Status;
   priority: Priority;
-  dueDate?: Date;
-  owner: string;
-  members: string[];
+  dueDate?: string;
+  ownerId: string;
+  memberIds?: string[];
   progress: number;
 };

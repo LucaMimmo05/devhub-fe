@@ -1,10 +1,10 @@
 import { StickyNote } from "lucide-react";
 
 type QuickNoteProps = {
-    note: {
-        id: number;
-        title: string;
-    };
+  note: {
+    id: string | number;
+    title: string;
+  };
 };
 const QuickNote = ({ note }: QuickNoteProps) => {
   return (

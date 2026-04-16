@@ -16,20 +16,32 @@ import QuickNote from "@/components/ui/QuickNote";
 import GithubActivity from "@/components/ui/GithubActivity";
 import { useAuth } from "@/context/AuthContext";
 import ProjectOverview from "@/components/ui/ProjectOverview";
-import { githubActivityMock, notesMock, taskMock } from "@/mock/dashboard-mock";
+import { githubActivityMock } from "@/mock/dashboard-mock";
 import { useEffect, useState } from "react";
 import { getUserProject } from "@/services/projectService";
+import { getMyTasks } from "@/services/taskService";
+import { getMyNotes } from "@/services/noteService";
 import type { ProjectType } from "@/types/projectType";
+import type { TaskType } from "@/types/taskType";
+import type { NoteType } from "@/types/noteType";
+import { useNavigate } from "react-router-dom";
+
 const Dashboard = () => {
   const [previewProjects, setPreviewProjects] = useState<ProjectType[]>([]);
+  const [recentTasks, setRecentTasks] = useState<TaskType[]>([]);
+  const [recentNotes, setRecentNotes] = useState<NoteType[]>([]);
+  const navigate = useNavigate();
+
   useEffect(() => {
-    const loadTwoProjects = () => {
-      getUserProject(2).then(setPreviewProjects).catch(console.error);
-    };
-    loadTwoProjects();
+    getUserProject(2).then(setPreviewProjects).catch(console.error);
+    getMyTasks().then((tasks) => setRecentTasks(tasks.slice(0, 5))).catch(console.error);
+    getMyNotes().then((notes) => setRecentNotes(notes.slice(0, 3))).catch(console.error);
   }, []);
 
   const { user } = useAuth();
+
+  const pendingCount = recentTasks.filter((t) => t.status === "PENDING").length;
+
   return (
     <PageContainer className="flex flex-col gap-6 w-full xl:h-full xl:overflow-hidden">
       <div className="grid grid-cols-1 xl:grid-rows-[1fr] xl:grid-cols-3 gap-10 w-full flex-1 min-h-0">
@@ -38,11 +50,13 @@ const Dashboard = () => {
             <CardHeader className="p-0">
               <CardTitle className="text-3xl">Hi {user?.firstName}!</CardTitle>
               <CardDescription className="max-w-md text-base">
-                You currently have X pending tasks. Let’s keep moving forward
-                and get things done.
+                {pendingCount > 0
+                  ? `You have ${pendingCount} pending task${pendingCount !== 1 ? "s" : ""}. Let's keep moving forward.`
+                  : "You're all caught up! Great work."}
               </CardDescription>
             </CardHeader>
           </Card>
+
           <div className="shrink-0 md:flex hidden flex-col gap-4 xl:gap-2">
             <div className="flex gap-0.5 flex-col shrink-0">
               <CardTitle className="text-base md:text-lg xl:text-base">
@@ -53,10 +67,10 @@ const Dashboard = () => {
               </CardDescription>
             </div>
             <div className="flex flex-wrap flex-col gap-6 md:flex-row xl:gap-4 min-h-0">
-              {previewProjects && previewProjects.length > 1 ? (
-                previewProjects.slice(0, 2).map((project) => {
-                  return <ProjectOverview key={project.id} project={project} />;
-                })
+              {previewProjects && previewProjects.length > 0 ? (
+                previewProjects.slice(0, 2).map((project) => (
+                  <ProjectOverview key={project.id} project={project} />
+                ))
               ) : (
                 <Card className="hidden md:flex w-full flex-col items-center justify-center p-6 border-dashed shadow-none bg-muted/10 h-64 xl:h-40 xl:p-4">
                   <div className="flex flex-col items-center gap-2 text-center xl:gap-1">
@@ -64,7 +78,6 @@ const Dashboard = () => {
                     <h3 className="font-semibold text-lg mt-2 xl:text-base xl:mt-1">
                       No projects found
                     </h3>
-
                     <Button className="mt-4 xl:mt-2" size="sm" asChild>
                       <Link to="/projects">
                         <Plus className="mr-2 h-4 w-4" />
@@ -88,36 +101,39 @@ const Dashboard = () => {
                   <GithubActivity key={activity.id} activity={activity} />
                 ))}
               </CardContent>
-              <CardFooter className="flex justify-end pt-1 pb-2 ">
+              <CardFooter className="flex justify-end pt-1 pb-2">
                 <Button
                   variant="link"
                   size="sm"
                   className="cursor-pointer flex items-center gap-1 p-0"
+                  onClick={() => navigate("/github")}
                 >
                   View All Activity{" "}
                   <ArrowRight className="mt-0.5 ml-1" size={16} />
                 </Button>
               </CardFooter>
             </Card>
+
             <Card className="flex-1 w-full sm:min-w-75 flex flex-col min-h-75 xl:h-full xl:min-h-0">
               <CardHeader className="pb-1">
-                <CardTitle className="text-base md:text-lg">
-                  Quick Notes
-                </CardTitle>
-                <Separator className="" />
+                <CardTitle className="text-base md:text-lg">Quick Notes</CardTitle>
+                <Separator />
               </CardHeader>
-
-              <CardContent className=" flex flex-col flex-1 overflow-auto pb-0">
-                {notesMock.slice(0, 3).map((note) => (
-                  <QuickNote key={note.id} note={note} />
-                ))}
+              <CardContent className="flex flex-col flex-1 overflow-auto pb-0">
+                {recentNotes.length > 0 ? (
+                  recentNotes.map((note) => (
+                    <QuickNote key={note.id} note={note} />
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">No notes yet</p>
+                )}
               </CardContent>
-
               <CardFooter className="pt-1 pb-2">
                 <Button
                   variant="link"
                   size="sm"
                   className="cursor-pointer flex items-center gap-1 p-0"
+                  onClick={() => navigate("/notes")}
                 >
                   <Plus size={14} />
                   New Note
@@ -128,22 +144,25 @@ const Dashboard = () => {
         </div>
 
         <Card className="min-h-64 xl:min-h-0 flex flex-col xl:h-full">
-          <CardHeader className=" shrink-0">
+          <CardHeader className="shrink-0">
             <CardTitle className="text-base md:text-lg">Recent Tasks</CardTitle>
             <Separator />
           </CardHeader>
-
           <CardContent className="flex flex-col gap-4 flex-1 overflow-auto">
-            {taskMock.slice(0, 5).map((task) => (
-              <Task key={task.id} task={task} />
-            ))}
+            {recentTasks.length > 0 ? (
+              recentTasks.map((task) => (
+                <Task key={task.id} task={task} />
+              ))
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-4">No tasks yet</p>
+            )}
           </CardContent>
-
           <CardFooter className="flex justify-end pt-1 pb-2 shrink-0">
             <Button
               variant="link"
               size="sm"
               className="cursor-pointer flex items-center gap-1 p-0"
+              onClick={() => navigate("/tasks")}
             >
               View All Tasks <ArrowRight className="mt-0.5 ml-1" size={16} />
             </Button>

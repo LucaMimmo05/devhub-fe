@@ -21,8 +21,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 
-export type Priority = "LOW" | "MEDIUM" | "HIGH";
-export type Status = "PENDING" | "IN_PROGRESS" | "COMPLETED";
+import type { Priority, Status } from "@/types/PriorityAndStatusType";
 
 const Projects = () => {
   const { user } = useAuth();
@@ -71,12 +70,12 @@ const Projects = () => {
     const newProject: ProjectRequest = {
       title,
       description,
-      imgUrl: imgUrl || undefined,
-      owner: user.id,
-      members: memberIds,
+      imageUrl: imgUrl || undefined,
+      ownerId: user.id,
+      memberIds,
       priority,
       status,
-      dueDate: dueDate || undefined,
+      dueDate: dueDate ? dueDate.toISOString() : undefined,
       progress,
     };
 

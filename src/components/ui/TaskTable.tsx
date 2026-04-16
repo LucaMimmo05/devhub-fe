@@ -7,13 +7,13 @@ import {
   TableHeader,
   TableRow,
 } from "./table";
-import { useState } from "react";
 import { Checkbox } from "./checkbox";
 import PriorityBadge from "./PriorityBadge";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { HeaderType } from "@/pages/ProjectDetails/ProjectDetails";
 import { cn } from "@/lib/utils";
 import NoData from "./NoData";
+
 type TasksProps = {
   data: TaskType[];
   columns: ColumnDef<TaskType>[];
@@ -24,6 +24,15 @@ type TasksProps = {
   hasProject?: boolean;
 };
 
+const formatDate = (dateStr?: string) => {
+  if (!dateStr) return "—";
+  return new Date(dateStr).toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+
 const TaskTable = ({
   data,
   header,
@@ -32,14 +41,6 @@ const TaskTable = ({
   hasBorder,
   hasProject,
 }: TasksProps) => {
-  const [tasks, setTasks] = useState<TaskType[] | undefined>(data);
-
-  const renderProject = (id: number) => {
-    if (!id) return null;
-
-    return null;
-  };
-
   return (
     <div
       className={cn(
@@ -50,64 +51,65 @@ const TaskTable = ({
       <Table className="min-w-150 table-auto bg-card">
         <TableHeader>
           <TableRow>
-            {header.map((head) => {
-              return <TableHead key={head.id}>{head.label}</TableHead>;
-            })}
+            {header.map((head) => (
+              <TableHead key={head.id}>{head.label}</TableHead>
+            ))}
           </TableRow>
         </TableHeader>
         <TableBody>
-          {tasks && tasks.length > 0 ? (
-            tasks.map((task) => {
-              return (
-                <TableRow key={task.id}>
-                  {hasCheckbok && (
-                    <TableCell>
-                      <Checkbox />
-                    </TableCell>
-                  )}
-
-                  <TableCell className="p-3">
-                    <p>{task.title}</p>
-                  </TableCell>
-
+          {data && data.length > 0 ? (
+            data.map((task) => (
+              <TableRow key={task.id}>
+                {hasCheckbok && (
                   <TableCell>
-                    <PriorityBadge data={task.status}>
-                      <p>{task.status}</p>
-                    </PriorityBadge>
+                    <Checkbox />
                   </TableCell>
+                )}
 
-                  <TableCell>
-                    <PriorityBadge data={task.priority}>
-                      <p>{task.priority}</p>
-                    </PriorityBadge>
-                  </TableCell>
+                <TableCell className="p-3">
+                  <p>{task.title}</p>
+                </TableCell>
 
+                <TableCell>
+                  <PriorityBadge data={task.status}>
+                    <p>{task.status}</p>
+                  </PriorityBadge>
+                </TableCell>
+
+                <TableCell>
+                  <PriorityBadge data={task.priority}>
+                    <p>{task.priority}</p>
+                  </PriorityBadge>
+                </TableCell>
+
+                <TableCell>
+                  <p>{formatDate(task.dueDate)}</p>
+                </TableCell>
+
+                {hasAssignedTo && (
                   <TableCell>
-                    <p>
-                      {task.updatedAt.toLocaleDateString("en-GB", {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                      })}
+                    <p className="text-sm text-muted-foreground">
+                      {task.assignedToUsername ?? "—"}
                     </p>
                   </TableCell>
-                  {hasAssignedTo && <TableCell>{task.assignedTo}</TableCell>}
+                )}
 
-                  {hasProject && (
-                    <TableCell>
-                      <p>{renderProject(task.project)}</p>
-                    </TableCell>
-                  )}
-                </TableRow>
-              );
-            })
+                {hasProject && (
+                  <TableCell>
+                    <p className="text-sm text-muted-foreground">
+                      {task.projectTitle ?? "—"}
+                    </p>
+                  </TableCell>
+                )}
+              </TableRow>
+            ))
           ) : (
-            <TableRow className="h-24 hover:bg-transparent ">
+            <TableRow className="h-24 hover:bg-transparent">
               <TableCell
                 colSpan={header.length}
                 className="text-center align-middle"
               >
-                <NoData resource="Tasks"/>
+                <NoData resource="Tasks" />
               </TableCell>
             </TableRow>
           )}
