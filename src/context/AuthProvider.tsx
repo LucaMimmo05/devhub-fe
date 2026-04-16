@@ -84,33 +84,48 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const isAccessTokenValid = (): boolean => {
+    const token = localStorage.getItem("accessToken");
+    if (!token) return false;
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      return payload.exp * 1000 > Date.now();
+    } catch {
+      return false;
+    }
+  };
+
   const refreshAuth = async () => {
     const storedUser = localStorage.getItem("userData");
+    const storedToken = localStorage.getItem("accessToken");
 
     try {
       const refreshData = await refresh();
 
       localStorage.setItem("accessToken", refreshData.accessToken);
-
-      axios.defaults.headers.common[
-        "Authorization"
-      ] = `Bearer ${refreshData.accessToken}`;
+      axios.defaults.headers.common["Authorization"] = `Bearer ${refreshData.accessToken}`;
 
       if (refreshData.userProfile) {
         setUser(refreshData.userProfile);
-        localStorage.setItem(
-          "userData",
-          JSON.stringify(refreshData.userProfile)
-        );
+        localStorage.setItem("userData", JSON.stringify(refreshData.userProfile));
       } else if (storedUser) {
         setUser(JSON.parse(storedUser));
       }
       setStatus("authenticated");
     } catch (error) {
-      setStatus("unauthenticated");
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("userData");
-      console.error("Token refresh failed:", error);
+      // Se il refresh token non funziona ma l'access token è ancora valido,
+      // ripristina la sessione dal localStorage senza fare logout.
+      if (isAccessTokenValid() && storedUser && storedToken) {
+        console.warn("Refresh failed — restoring session from localStorage");
+        axios.defaults.headers.common["Authorization"] = `Bearer ${storedToken}`;
+        setUser(JSON.parse(storedUser));
+        setStatus("authenticated");
+      } else {
+        setStatus("unauthenticated");
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("userData");
+        console.error("Token refresh failed, session expired:", error);
+      }
     }
   };
 
