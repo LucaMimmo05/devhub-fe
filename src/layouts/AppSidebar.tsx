@@ -140,8 +140,8 @@ const AppSidebar = () => {
     w-(--radix-dropdown-menu-trigger-width)
   "
               >
-                <DropdownMenuItem>
-                  <span>Settings</span>
+                <DropdownMenuItem asChild>
+                  <NavLink to="/settings">Settings</NavLink>
                 </DropdownMenuItem>
 
                 <DropdownMenuItem
