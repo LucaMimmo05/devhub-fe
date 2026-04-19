@@ -1,64 +1,76 @@
 import type { ProjectType } from "@/types/projectType";
-import { Badge } from "./badge";
-import { Button } from "./button";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-  CardFooter,
-} from "./card";
+import { Card, CardHeader, CardContent } from "./card";
 import PriorityBadge from "./PriorityBadge";
-import { Progress } from "./progress";
-import { ArrowRight, User } from "lucide-react";
+import { Users, Calendar, ArrowRight } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useNavigate } from "react-router-dom";
 
-type ProjectOverviewProps = {
-  project: ProjectType;
+const statusLabel: Record<string, string> = {
+  PENDING:     "Pending",
+  IN_PROGRESS: "In Progress",
+  COMPLETED:   "Completed",
+  ARCHIVED:    "Archived",
 };
-const ProjectOverview = ({ project }: ProjectOverviewProps) => {
+
+const priorityLabel: Record<string, string> = {
+  LOW: "Low", MEDIUM: "Medium", HIGH: "High",
+};
+
+const formatDate = (d?: string) => {
+  if (!d) return null;
+  return new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+};
+
+const ProjectOverview = ({ project }: { project: ProjectType }) => {
+  const navigate = useNavigate();
+
   return (
-    <Card key={project.id} className="flex-1 xl:max-h-36">
-      <CardHeader className="pb-4 flex-row justify-between items-center xl:pb-2 xl:px-4 xl:pt-4">
-        <div className="flex flex-col space-y-1 xl:space-y-0.5">
-          <CardTitle className="xl:text-sm xl:font-medium">
-            {project.title}
-          </CardTitle>
-          <CardDescription className="xl:text-xs xl:leading-tight">
-            {project.description}
-          </CardDescription>
-        </div>
-        <div className="flex items-center">
-          <User size={16} className="text-muted-foreground xl:w-3 xl:h-3" />
-          <span className="ml-1 text-sm text-muted-foreground xl:text-xs">
-            {" "}
-            {project.members?.length ?? 0}
-          </span>
+    <Card
+      className={cn(
+        "flex-1 flex flex-col gap-0 cursor-pointer",
+        "hover:bg-muted/30 transition-colors"
+      )}
+      onClick={() => navigate(`/projects/${project.id}`)}
+    >
+      <CardHeader className="pb-2 pt-4 px-4">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold truncate leading-snug">{project.title}</p>
+            {project.description && (
+              <p className="text-xs text-muted-foreground truncate mt-0.5 leading-snug">
+                {project.description}
+              </p>
+            )}
+          </div>
+          <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0 mt-0.5" />
         </div>
       </CardHeader>
-      <CardContent className="flex flex-col gap-1.5 xl:gap-1 xl:px-4 xl:py-1">
-        <p className="text-xs text-muted-foreground xl:text-[10px]">
-          {project.progress}% complete
-        </p>
-        <Progress value={project.progress} className="h-1 xl:h-0.5" />
+
+      <CardContent className="px-4 pb-4 flex flex-col gap-2.5">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <PriorityBadge data={project.status} className="text-[10px] px-1.5 py-0.5">
+            {statusLabel[project.status] ?? project.status}
+          </PriorityBadge>
+          <PriorityBadge data={project.priority} className="text-[10px] px-1.5 py-0.5">
+            {priorityLabel[project.priority] ?? project.priority}
+          </PriorityBadge>
+        </div>
+
+        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          {(project.members?.length ?? 0) > 0 && (
+            <span className="flex items-center gap-1">
+              <Users className="h-3 w-3" />
+              {project.members.length} member{project.members.length !== 1 ? "s" : ""}
+            </span>
+          )}
+          {project.dueDate && (
+            <span className="flex items-center gap-1">
+              <Calendar className="h-3 w-3" />
+              {formatDate(project.dueDate)}
+            </span>
+          )}
+        </div>
       </CardContent>
-      <CardFooter className="flex items-center gap-2 w-full xl:px-4 xl:py-2">
-        <PriorityBadge data={project.status}>{project.status}</PriorityBadge>
-        <Badge
-          variant="outline"
-          className="hover:bg-inset text-xs shrink-0 xl:text-[10px] xl:px-1.5 xl:py-0.5"
-        >
-          0 Tasks
-        </Badge>
-        <Button
-          variant="link"
-          size="sm"
-          className="hover:bg-inset cursor-pointer px-2 ml-auto xl:text-xs xl:px-1"
-        >
-          Go To {project.title}
-          <ArrowRight className="mt-0.5 ml-1 xl:w-3 xl:h-3" size={16} />
-        </Button>
-      </CardFooter>
     </Card>
   );
 };

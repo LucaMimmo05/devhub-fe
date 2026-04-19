@@ -13,6 +13,7 @@ import PageContainer from "@/layouts/PageContainer";
 import Modal from "@/components/ui/Modal";
 import NoData from "@/components/ui/NoData";
 import ProjectCard from "@/components/ui/ProjectCard";
+import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,6 +46,8 @@ const Projects = () => {
   const [priority, setPriority] = useState<Priority>("LOW");
   const [status, setStatus] = useState<Status>("PENDING");
   const [dueDate, setDueDate] = useState<Date | null>(null);
+  const [createError, setCreateError] = useState("");
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     getUserProject().then(setProjects).catch(console.error);
@@ -62,14 +65,18 @@ const Projects = () => {
     setPriority("LOW");
     setStatus("PENDING");
     setDueDate(null);
+    setCreateError("");
+    setCreating(false);
   };
 
   const handleCreate = async () => {
-    if (!title || !description || !user?.id) return;
+    if (!title.trim() || !user?.id) return;
+    setCreateError("");
+    setCreating(true);
 
     const newProject: ProjectRequest = {
-      title,
-      description,
+      title: title.trim(),
+      description: description.trim() || undefined,
       imageUrl: imgUrl || undefined,
       ownerId: user.id,
       memberIds: [],
@@ -82,8 +89,17 @@ const Projects = () => {
       const created = await createProject(newProject);
       setProjects((prev) => [...prev, created]);
       handleClose();
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Error creating project:", err);
+      const msg =
+        (err as { response?: { data?: { message?: string; title?: string } } })
+          ?.response?.data?.message ??
+        (err as { response?: { data?: { message?: string; title?: string } } })
+          ?.response?.data?.title ??
+        "Failed to create project. Please try again.";
+      setCreateError(msg);
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -155,11 +171,17 @@ const Projects = () => {
         description="Fill in the details below to create a new project."
         className="max-w-4xl w-full"
         footer={
-          <div className="flex justify-end gap-2">
-            <Button onClick={handleCreate}>Create</Button>
-            <Button variant="outline" onClick={handleClose}>
-              Cancel
-            </Button>
+          <div className="flex items-center justify-between w-full gap-2">
+            {createError && (
+              <p className="text-sm text-destructive flex-1">{createError}</p>
+            )}
+            <div className="flex gap-2 ml-auto">
+              <Button variant="outline" onClick={handleClose} disabled={creating}>Cancel</Button>
+              <Button onClick={handleCreate} disabled={creating || !title.trim()}>
+                {creating && <Loader2 className="animate-spin h-4 w-4 mr-1" />}
+                Create
+              </Button>
+            </div>
           </div>
         }
       >

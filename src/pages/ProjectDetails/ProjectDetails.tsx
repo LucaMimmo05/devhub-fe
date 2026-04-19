@@ -8,9 +8,9 @@ import {
 } from "@/components/ui/card";
 import NoData from "@/components/ui/NoData";
 import TaskTable from "@/components/ui/TaskTable";
-import TaskSheet from "@/components/ui/TaskSheet";
+import TaskModal from "@/components/ui/TaskModal";
 import PageContainer from "@/layouts/PageContainer";
-import { getProjectById, updateProject, addProjectMember, removeProjectMember } from "@/services/projectService";
+import { updateProject, addProjectMember, removeProjectMember } from "@/services/projectService";
 import { getProjectTasks, createTask } from "@/services/taskService";
 import { searchUsers } from "@/services/userService";
 import type { ProjectType, ProjectMemberSummary } from "@/types/projectType";
@@ -30,8 +30,8 @@ import {
 import {
   useLoaderData,
   useNavigate,
-  type LoaderFunctionArgs,
 } from "react-router-dom";
+import type { HeaderType } from "./projectDetailsUtils";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import Modal from "@/components/ui/Modal";
@@ -68,20 +68,6 @@ const priorityLabel: Record<string, string> = {
   MEDIUM: "Medium",
   HIGH: "High",
 };
-
-export type HeaderType = {
-  label: string;
-  id: number;
-};
-
-export async function projectDetailsLoader({ params }: LoaderFunctionArgs) {
-  if (!params.projectId) {
-    throw new Response("Not Found", { status: 404 });
-  }
-  return {
-    project: await getProjectById(params.projectId),
-  };
-}
 
 const MemberCard = ({
   member,
@@ -513,7 +499,7 @@ const ProjectDetails = () => {
         </div>
       </div>
 
-      <TaskSheet
+      <TaskModal
         task={editingTask}
         onClose={() => setEditingTask(null)}
         onSaved={(updated) => setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)))}
