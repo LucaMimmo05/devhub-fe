@@ -1,7 +1,16 @@
 import type { ReactNode } from "react";
-import { Badge } from "./badge";
 import { cn } from "@/lib/utils";
 import type { Priority, Status } from "@/types/PriorityAndStatusType";
+
+const colorMap: Record<Priority | Status, string> = {
+  HIGH:        "bg-red-500/10 text-red-400 border-red-500/25",
+  MEDIUM:      "bg-yellow-500/10 text-yellow-400 border-yellow-500/25",
+  LOW:         "bg-emerald-500/10 text-emerald-400 border-emerald-500/25",
+  PENDING:     "bg-muted text-muted-foreground border-border",
+  IN_PROGRESS: "bg-primary/10 text-primary border-primary/25",
+  COMPLETED:   "bg-emerald-500/10 text-emerald-400 border-emerald-500/25",
+  ARCHIVED:    "bg-muted text-muted-foreground border-border",
+};
 
 const PriorityBadge = ({
   data,
@@ -11,29 +20,17 @@ const PriorityBadge = ({
   data: Priority | Status;
   children: ReactNode;
   className?: string;
-}) => {
-  const colorMap: Record<Priority | Status, string> = {
-    HIGH: "bg-red-700 text-red-200",
-    MEDIUM: "bg-yellow-700 text-yellow-200",
-    LOW: "bg-green-700 text-green-200",
-    PENDING: "bg-red-700 text-red-200",
-    IN_PROGRESS: "bg-yellow-700 text-yellow-200",
-    COMPLETED: "bg-green-700 text-green-200",
-    ARCHIVED: "bg-gray-600 text-gray-200",
-  };
-
-  return (
-    <Badge
-      className={cn(
-        "text-xs px-2 py-0.5 whitespace-nowrap shrink-0 truncate",
-        "hover:bg-inset transition-colors duration-150",
-        colorMap[data],
-        className
-      )}
-    >
-      {children}
-    </Badge>
-  );
-};
+}) => (
+  <span
+    className={cn(
+      "inline-flex items-center rounded-md border px-2 py-0.5",
+      "text-xs font-medium whitespace-nowrap shrink-0",
+      colorMap[data],
+      className
+    )}
+  >
+    {children}
+  </span>
+);
 
 export default PriorityBadge;

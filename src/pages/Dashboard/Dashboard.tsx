@@ -119,10 +119,14 @@ const Dashboard = () => {
                 <CardTitle className="text-base md:text-lg">Quick Notes</CardTitle>
                 <Separator />
               </CardHeader>
-              <CardContent className="flex flex-col flex-1 overflow-auto pb-0">
+              <CardContent className="flex flex-col flex-1 overflow-auto px-4 py-0 pt-2 pb-0">
                 {recentNotes.length > 0 ? (
                   recentNotes.map((note) => (
-                    <QuickNote key={note.id} note={note} />
+                    <QuickNote
+                      key={note.id}
+                      note={note}
+                      onClick={() => navigate("/notes", { state: { noteId: note.id } })}
+                    />
                   ))
                 ) : (
                   <p className="text-sm text-muted-foreground text-center py-4">No notes yet</p>
@@ -148,7 +152,7 @@ const Dashboard = () => {
             <CardTitle className="text-base md:text-lg">Recent Tasks</CardTitle>
             <Separator />
           </CardHeader>
-          <CardContent className="flex flex-col gap-4 flex-1 overflow-auto">
+          <CardContent className="flex flex-col flex-1 overflow-auto px-4 py-0 pt-2">
             {recentTasks.length > 0 ? (
               recentTasks.map((task) => (
                 <Task key={task.id} task={task} />

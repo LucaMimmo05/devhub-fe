@@ -15,7 +15,8 @@ import Settings from "@/pages/Settings/Settings";
 import Login from "@/pages/Authentication/Login";
 import Register from "@/pages/Authentication/Register";
 import NotFound from "@/pages/NotFound/NotFound";
-import ProjectDetails, { projectDetailsLoader } from "@/pages/ProjectDetails/ProjectDetails";
+import ProjectDetails from "@/pages/ProjectDetails/ProjectDetails";
+import { projectDetailsLoader } from "@/pages/ProjectDetails/projectDetailsUtils";
 
 export type RouteHandle<TData = unknown> = {
   title?: string | ((params: Record<string, string>, data?: TData) => string);
