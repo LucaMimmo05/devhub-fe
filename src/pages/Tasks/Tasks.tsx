@@ -1,14 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import TaskTable from "@/components/ui/TaskTable";
 import PageContainer from "@/layouts/PageContainer";
-import { Filter, Loader2, X } from "lucide-react";
+import { CheckSquare, Filter, Loader2, X } from "lucide-react";
 import TaskSheet from "@/components/ui/TaskSheet";
 import type { HeaderType } from "../ProjectDetails/ProjectDetails";
 import DropdownFilter from "@/components/ui/DropdownFilter";
 import { Button } from "@/components/ui/button";
 import { getMyTasks, updateTask } from "@/services/taskService";
 import type { TaskType } from "@/types/taskType";
+import { useAuth } from "@/context/AuthContext";
 
 const STATUS_OPTIONS = [
   { label: "Pending", value: "PENDING" },
@@ -32,39 +33,67 @@ const Tasks = () => {
     { label: "Project", id: 5 },
   ];
 
+  const { user } = useAuth();
   const [tasks, setTasks] = useState<TaskType[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterText, setFilterText] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | undefined>();
   const [priorityFilter, setPriorityFilter] = useState<string | undefined>();
-
   const [editingTask, setEditingTask] = useState<TaskType | null>(null);
 
-  useEffect(() => {
-    getMyTasks()
+  const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const currentFilters = useRef({ status: undefined as string | undefined, priority: undefined as string | undefined, search: "" });
+
+  const fetchTasks = (status?: string, priority?: string, search?: string) => {
+    setLoading(true);
+    currentFilters.current = { status, priority, search: search ?? "" };
+    getMyTasks({ status, priority, search: search || undefined })
       .then(setTasks)
       .catch(console.error)
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchTasks();
   }, []);
 
-  const filteredTasks = tasks.filter((task) => {
-    if (statusFilter && task.status !== statusFilter) return false;
-    if (priorityFilter && task.priority !== priorityFilter) return false;
-    if (filterText && !task.title.toLowerCase().includes(filterText.toLowerCase())) return false;
-    return true;
-  });
+  const handleStatusChange = (value: string | undefined) => {
+    setStatusFilter(value);
+    fetchTasks(value, priorityFilter, filterText);
+  };
 
-  const isFiltered = !!statusFilter || !!priorityFilter || !!filterText;
+  const handlePriorityChange = (value: string | undefined) => {
+    setPriorityFilter(value);
+    fetchTasks(statusFilter, value, filterText);
+  };
+
+  const handleSearchChange = (value: string) => {
+    setFilterText(value);
+    if (searchTimeout.current) clearTimeout(searchTimeout.current);
+    searchTimeout.current = setTimeout(() => {
+      fetchTasks(statusFilter, priorityFilter, value);
+    }, 400);
+  };
+
+  const handleClearFilters = () => {
+    setStatusFilter(undefined);
+    setPriorityFilter(undefined);
+    setFilterText("");
+    fetchTasks();
+  };
 
   const handleToggleComplete = async (task: TaskType) => {
     const newStatus = task.status === "COMPLETED" ? "PENDING" : "COMPLETED";
     try {
-      const updated = await updateTask(task.id, { status: newStatus });
-      setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
+      await updateTask(task.id, { status: newStatus });
+      const { status, priority, search } = currentFilters.current;
+      fetchTasks(status, priority, search);
     } catch (err) {
       console.error("Failed to toggle task:", err);
     }
   };
+
+  const isFiltered = !!statusFilter || !!priorityFilter || !!filterText;
 
   return (
     <PageContainer className="space-y-3">
@@ -75,7 +104,7 @@ const Tasks = () => {
             placeholder="Filter Tasks"
             className="pl-9"
             value={filterText}
-            onChange={(e) => setFilterText(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
           />
         </div>
 
@@ -83,13 +112,13 @@ const Tasks = () => {
           <DropdownFilter
             options={STATUS_OPTIONS}
             value={statusFilter}
-            onChange={setStatusFilter}
+            onChange={handleStatusChange}
             placeholder="Filter By Status"
           />
           <DropdownFilter
             options={PRIORITY_OPTIONS}
             value={priorityFilter}
-            onChange={setPriorityFilter}
+            onChange={handlePriorityChange}
             placeholder="Filter By Priority"
           />
         </div>
@@ -97,11 +126,7 @@ const Tasks = () => {
         {isFiltered && (
           <Button
             variant="destructive"
-            onClick={() => {
-              setStatusFilter(undefined);
-              setPriorityFilter(undefined);
-              setFilterText("");
-            }}
+            onClick={handleClearFilters}
             className="flex items-center gap-1 px-3 py-1 border rounded"
           >
             <X className="w-4 h-4" /> Clear Filters
@@ -113,9 +138,24 @@ const Tasks = () => {
         <div className="flex justify-center items-center h-48">
           <Loader2 className="animate-spin h-6 w-6 text-muted-foreground" />
         </div>
+      ) : tasks.length === 0 ? (
+        <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] gap-4 text-center">
+          <CheckSquare className="h-12 w-12 text-muted-foreground/40" />
+          <div>
+            <h3 className="font-semibold text-lg">
+              {isFiltered ? "No tasks match your filters" : "No tasks yet"}
+            </h3>
+            <p className="text-muted-foreground text-sm">
+              {isFiltered ? "Try clearing the filters." : "Tasks are created from within a project."}
+            </p>
+          </div>
+          {isFiltered && (
+            <Button variant="outline" onClick={handleClearFilters}>Clear Filters</Button>
+          )}
+        </div>
       ) : (
         <TaskTable
-          data={filteredTasks}
+          data={tasks}
           columns={[]}
           header={taskHeader}
           hasCheckbok
@@ -129,7 +169,12 @@ const Tasks = () => {
       <TaskSheet
         task={editingTask}
         onClose={() => setEditingTask(null)}
-        onSaved={(updated) => setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)))}
+        onSaved={(updated) => {
+          setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
+          setEditingTask(null);
+        }}
+        onDeleted={(id) => setTasks((prev) => prev.filter((t) => t.id !== id))}
+        canEdit={!!user && !!editingTask?.createdByProfileId && editingTask.createdByProfileId === user.id}
       />
     </PageContainer>
   );

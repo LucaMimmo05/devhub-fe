@@ -1,13 +1,19 @@
 import type { TaskRequest } from "@/types/taskType";
 import { mainCallApi } from ".";
 
-export const getMyTasks = async () => {
-  const response = await mainCallApi.get("/tasks");
+export type TaskFilters = {
+  status?: string;
+  priority?: string;
+  search?: string;
+};
+
+export const getMyTasks = async (filters?: TaskFilters) => {
+  const response = await mainCallApi.get("/tasks", { params: filters });
   return response.data;
 };
 
-export const getProjectTasks = async (projectId: string) => {
-  const response = await mainCallApi.get(`/projects/${projectId}/tasks`);
+export const getProjectTasks = async (projectId: string, filters?: TaskFilters) => {
+  const response = await mainCallApi.get(`/projects/${projectId}/tasks`, { params: filters });
   return response.data;
 };
 

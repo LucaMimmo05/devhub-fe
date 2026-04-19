@@ -17,8 +17,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
-import { updateTask } from "@/services/taskService";
+import { Loader2, Trash2 } from "lucide-react";
+import { updateTask, deleteTask } from "@/services/taskService";
 import type { TaskType } from "@/types/taskType";
 import type { Priority, Status } from "@/types/PriorityAndStatusType";
 
@@ -27,17 +27,20 @@ type AssignableMember = {
   username: string;
   firstName?: string;
   lastName?: string;
+  avatarUrl?: string;
 };
 
 type Props = {
   task: TaskType | null;
   onClose: () => void;
   onSaved: (updated: TaskType) => void;
+  onDeleted?: (taskId: string) => void;
   members?: AssignableMember[];
   canAssign?: boolean;
+  canEdit?: boolean;
 };
 
-const TaskSheet = ({ task, onClose, onSaved, members, canAssign }: Props) => {
+const TaskSheet = ({ task, onClose, onSaved, onDeleted, members, canAssign, canEdit = true }: Props) => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<Priority>("MEDIUM");
@@ -45,6 +48,8 @@ const TaskSheet = ({ task, onClose, onSaved, members, canAssign }: Props) => {
   const [dueDate, setDueDate] = useState("");
   const [assignedToProfileId, setAssignedToProfileId] = useState<string>("");
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   useEffect(() => {
     if (task) {
@@ -54,6 +59,7 @@ const TaskSheet = ({ task, onClose, onSaved, members, canAssign }: Props) => {
       setStatus(task.status);
       setDueDate(task.dueDate ? task.dueDate.split("T")[0] : "");
       setAssignedToProfileId(task.assignedToProfileId ?? "");
+      setConfirmDelete(false);
     }
   }, [task]);
 
@@ -78,18 +84,32 @@ const TaskSheet = ({ task, onClose, onSaved, members, canAssign }: Props) => {
     }
   };
 
+  const handleDelete = async () => {
+    if (!task) return;
+    setDeleting(true);
+    try {
+      await deleteTask(task.id);
+      onDeleted?.(task.id);
+      onClose();
+    } catch (err) {
+      console.error("Failed to delete task:", err);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <Sheet open={!!task} onOpenChange={(open) => !open && onClose()}>
       <SheetContent className="flex flex-col gap-0 p-0 sm:max-w-md">
         <SheetHeader className="px-6 py-5 border-b">
-          <SheetTitle>Edit Task</SheetTitle>
+          <SheetTitle>{canEdit ? "Edit Task" : "Task Details"}</SheetTitle>
           <SheetDescription>{task?.title}</SheetDescription>
         </SheetHeader>
 
         <div className="flex flex-col gap-5 px-6 py-5 flex-1 overflow-y-auto">
           <div className="flex flex-col gap-2">
             <Label>Title</Label>
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} />
+            <Input value={title} onChange={(e) => setTitle(e.target.value)} disabled={!canEdit} />
           </div>
 
           <div className="flex flex-col gap-2">
@@ -98,14 +118,15 @@ const TaskSheet = ({ task, onClose, onSaved, members, canAssign }: Props) => {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={4}
-              placeholder="Optional description"
+              placeholder="No description"
+              disabled={!canEdit}
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-2">
               <Label>Status</Label>
-              <Select value={status} onValueChange={(v) => setStatus(v as Status)}>
+              <Select value={status} onValueChange={(v) => setStatus(v as Status)} disabled={!canEdit}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="PENDING">Pending</SelectItem>
@@ -117,7 +138,7 @@ const TaskSheet = ({ task, onClose, onSaved, members, canAssign }: Props) => {
 
             <div className="flex flex-col gap-2">
               <Label>Priority</Label>
-              <Select value={priority} onValueChange={(v) => setPriority(v as Priority)}>
+              <Select value={priority} onValueChange={(v) => setPriority(v as Priority)} disabled={!canEdit}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="LOW">Low</SelectItem>
@@ -134,6 +155,7 @@ const TaskSheet = ({ task, onClose, onSaved, members, canAssign }: Props) => {
               type="date"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
+              disabled={!canEdit}
             />
           </div>
 
@@ -154,12 +176,39 @@ const TaskSheet = ({ task, onClose, onSaved, members, canAssign }: Props) => {
           )}
         </div>
 
-        <div className="px-6 py-4 border-t flex justify-end gap-2">
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSave} disabled={saving || !title.trim()}>
-            {saving && <Loader2 className="animate-spin h-4 w-4 mr-2" />}
-            Save
-          </Button>
+        <div className="px-6 py-4 border-t flex items-center justify-between gap-2">
+          {canEdit && !confirmDelete && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-destructive hover:text-destructive"
+              onClick={() => setConfirmDelete(true)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
+
+          {canEdit && confirmDelete && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-destructive">Delete?</span>
+              <Button size="sm" variant="destructive" onClick={handleDelete} disabled={deleting}>
+                {deleting ? <Loader2 className="animate-spin h-3.5 w-3.5" /> : "Yes"}
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setConfirmDelete(false)}>No</Button>
+            </div>
+          )}
+
+          {!canEdit && <div />}
+
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={onClose}>Close</Button>
+            {canEdit && (
+              <Button onClick={handleSave} disabled={saving || !title.trim()}>
+                {saving && <Loader2 className="animate-spin h-4 w-4 mr-2" />}
+                Save
+              </Button>
+            )}
+          </div>
         </div>
       </SheetContent>
     </Sheet>
