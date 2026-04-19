@@ -1,14 +1,14 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useHeaderActions } from "@/context/HeaderActionsContext";
-import { getMyNotes, createNote, updateNote, deleteNote } from "@/services/noteService";
-import type { NoteType } from "@/types/noteType";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Eye, EyeOff, Loader2, Plus, Search, StickyNote, Trash2 } from "lucide-react";
+import { useHeaderActions } from "@/context/HeaderActionsContext";
+import { cn } from "@/lib/utils";
+import { createNote, deleteNote, getMyNotes, updateNote } from "@/services/noteService";
+import type { NoteType } from "@/types/noteType";
 import { timeSince } from "@/utils/getRelativeTime";
+import { ArrowLeft, Eye, EyeOff, Loader2, Plus, Search, StickyNote, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { cn } from "@/lib/utils";
 
 const proseClass = [
   "text-sm text-foreground leading-relaxed",
@@ -273,7 +273,7 @@ const Notes = () => {
                   ref={textareaRef}
                   value={content}
                   onChange={(e) => { const v = e.target.value; setContent(v); setIsDirty(true); scheduleAutoSave(title, v); }}
-                  placeholder={"# Start writing...\n\nSupports **markdown** syntax."}
+                  placeholder={"Start writing..."}
                   className="w-full resize-none p-6 font-mono text-sm bg-transparent focus:outline-none leading-relaxed border-b"
                   style={{ height: "50%", minHeight: 0 }}
                   spellCheck={false}
@@ -294,7 +294,7 @@ const Notes = () => {
                 ref={textareaRef}
                 value={content}
                 onChange={(e) => { const v = e.target.value; setContent(v); setIsDirty(true); scheduleAutoSave(title, v); }}
-                placeholder={"# Start writing...\n\nSupports **markdown** syntax."}
+                placeholder={"Start writing..."}
                 className="flex-1 w-full resize-none p-6 font-mono text-sm bg-transparent focus:outline-none leading-relaxed"
                 spellCheck={false}
               />

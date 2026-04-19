@@ -67,7 +67,7 @@ const router = createBrowserRouter([
           title: "Overview",
           header: {
             showSearch: false,
-            actions: ["add", "editProjectDropdown"],
+            actions: [],
           },
         } satisfies RouteHandle<{
           project: { id: number; name: string; description: string };

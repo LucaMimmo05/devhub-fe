@@ -1,4 +1,3 @@
-import { Input } from "@/components/ui/input";
 import ShortcutHint from "@/components/ui/ShortcutHint";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useAuth } from "@/context/AuthContext";
@@ -39,20 +38,14 @@ const PageHeader = ({
 
       <div className="flex items-center gap-2">
         {showSearch && !isSearching && (
-          <div
-            className="relative md:w-64 w-9 h-9 md:h-auto flex items-center justify-center md:block cursor-pointer hover:bg-muted/50 rounded-md md:hover:bg-transparent transition-colors"
+          <button
             onClick={handleClick}
+            className="flex items-center gap-2 h-9 rounded-lg border border-border bg-muted/40 hover:bg-muted transition-colors px-3 text-sm text-muted-foreground md:w-56 w-9 justify-center md:justify-start"
           >
-            <Search className="md:absolute md:left-3 md:top-1/2 h-4 w-4 md:-translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Search…"
-              className="pl-9 md:block hidden cursor-pointer"
-              readOnly
-            />
-            <div className="hidden md:block">
-              <ShortcutHint />
-            </div>
-          </div>
+            <Search className="h-3.5 w-3.5 shrink-0" />
+            <span className="hidden md:inline flex-1 text-left">Search…</span>
+            <ShortcutHint />
+          </button>
         )}
         {actions}
       </div>
