@@ -7,6 +7,7 @@ import type { NoteType } from "@/types/noteType";
 import { timeSince } from "@/utils/getRelativeTime";
 import { ArrowLeft, Eye, EyeOff, Loader2, Plus, Search, StickyNote, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -50,11 +51,20 @@ const Notes = () => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const autoSaveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const selectedNoteRef = useRef<NoteType | null>(null);
+  const location = useLocation();
 
   useEffect(() => { selectedNoteRef.current = selectedNote; }, [selectedNote]);
 
   useEffect(() => {
-    getMyNotes().then(setNotes).catch(console.error);
+    const targetId = (location.state as { noteId?: string } | null)?.noteId;
+    getMyNotes().then((loaded: NoteType[]) => {
+      setNotes(loaded);
+      if (targetId) {
+        const match = loaded.find((n) => n.id === targetId);
+        if (match) selectNote(match);
+      }
+    }).catch(console.error);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
