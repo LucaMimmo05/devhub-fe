@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -177,6 +177,36 @@ const ProjectDetails = () => {
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isOwner = !!user && !!project.ownerUsername && user.username === project.ownerUsername;
+
+  const assignableMembers = useMemo(() => {
+    const list: { profileId: string; username: string; firstName?: string; lastName?: string; avatarUrl?: string }[] = [
+      ...(project.ownerProfileId && project.ownerUsername ? [{
+        profileId: project.ownerProfileId,
+        username: project.ownerUsername,
+        avatarUrl: project.ownerAvatarUrl,
+      }] : []),
+      ...project.members,
+    ];
+    if (user && !list.some((m) => m.profileId === user.id)) {
+      list.push({ profileId: user.id, username: user.username, firstName: user.firstName, lastName: user.lastName });
+    }
+    return list;
+  }, [project.ownerProfileId, project.ownerUsername, project.ownerAvatarUrl, project.members, user]);
+
+  const isCurrentUserStillMember = useMemo(
+    () => isOwner || project.members.some((m) => m.profileId === user?.id),
+    [isOwner, project.members, user]
+  );
+
+  const canAssignTask = (task: TaskType | null): boolean => {
+    if (!task || !user) return false;
+    if (isOwner) return true;
+    return (
+      isCurrentUserStillMember &&
+      !!task.createdByProfileId &&
+      task.createdByProfileId === user.id
+    );
+  };
 
   useEffect(() => {
     getProjectTasks(project.id)
@@ -495,6 +525,8 @@ const ProjectDetails = () => {
         task={editingTask}
         onClose={() => setEditingTask(null)}
         onSaved={(updated) => setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)))}
+        members={assignableMembers}
+        canAssign={canAssignTask(editingTask)}
       />
 
       {/* Add Task Modal */}

@@ -14,6 +14,7 @@ export type TaskType = {
   projectTitle?: string;
   assignedToProfileId?: string;
   assignedToUsername?: string;
+  createdByProfileId?: string;
 };
 
 export type TaskRequest = {

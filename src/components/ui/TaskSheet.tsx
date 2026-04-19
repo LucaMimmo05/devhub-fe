@@ -22,18 +22,28 @@ import { updateTask } from "@/services/taskService";
 import type { TaskType } from "@/types/taskType";
 import type { Priority, Status } from "@/types/PriorityAndStatusType";
 
+type AssignableMember = {
+  profileId: string;
+  username: string;
+  firstName?: string;
+  lastName?: string;
+};
+
 type Props = {
   task: TaskType | null;
   onClose: () => void;
   onSaved: (updated: TaskType) => void;
+  members?: AssignableMember[];
+  canAssign?: boolean;
 };
 
-const TaskSheet = ({ task, onClose, onSaved }: Props) => {
+const TaskSheet = ({ task, onClose, onSaved, members, canAssign }: Props) => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<Priority>("MEDIUM");
   const [status, setStatus] = useState<Status>("PENDING");
   const [dueDate, setDueDate] = useState("");
+  const [assignedToProfileId, setAssignedToProfileId] = useState<string>("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -43,6 +53,7 @@ const TaskSheet = ({ task, onClose, onSaved }: Props) => {
       setPriority(task.priority);
       setStatus(task.status);
       setDueDate(task.dueDate ? task.dueDate.split("T")[0] : "");
+      setAssignedToProfileId(task.assignedToProfileId ?? "");
     }
   }, [task]);
 
@@ -56,6 +67,7 @@ const TaskSheet = ({ task, onClose, onSaved }: Props) => {
         status,
         priority,
         dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
+        assignedToProfileId: canAssign && assignedToProfileId ? assignedToProfileId : undefined,
       });
       onSaved(updated);
       onClose();
@@ -124,6 +136,22 @@ const TaskSheet = ({ task, onClose, onSaved }: Props) => {
               onChange={(e) => setDueDate(e.target.value)}
             />
           </div>
+
+          {canAssign && members && members.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <Label>Assigned To</Label>
+              <Select value={assignedToProfileId} onValueChange={setAssignedToProfileId}>
+                <SelectTrigger><SelectValue placeholder="Select member..." /></SelectTrigger>
+                <SelectContent>
+                  {members.map((m) => (
+                    <SelectItem key={m.profileId} value={m.profileId}>
+                      {m.firstName && m.lastName ? `${m.firstName} ${m.lastName}` : m.username} (@{m.username})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
 
         <div className="px-6 py-4 border-t flex justify-end gap-2">

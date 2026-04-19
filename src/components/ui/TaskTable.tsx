@@ -23,6 +23,7 @@ type TasksProps = {
   hasBorder?: boolean;
   hasProject?: boolean;
   onEdit?: (task: TaskType) => void;
+  onToggleComplete?: (task: TaskType) => void;
 };
 
 const formatDate = (dateStr?: string) => {
@@ -55,6 +56,7 @@ const TaskTable = ({
   hasBorder,
   hasProject,
   onEdit,
+  onToggleComplete,
 }: TasksProps) => {
   if (!data || data.length === 0) {
     return <NoData resource="Tasks" />;
@@ -87,13 +89,16 @@ const TaskTable = ({
               onClick={() => onEdit?.(task)}
             >
               {hasCheckbok && (
-                <TableCell>
-                  <Checkbox />
+                <TableCell onClick={(e) => e.stopPropagation()}>
+                  <Checkbox
+                    checked={task.status === "COMPLETED"}
+                    onCheckedChange={() => onToggleComplete?.(task)}
+                  />
                 </TableCell>
               )}
 
               <TableCell>
-                <p className="font-medium truncate">{task.title}</p>
+                <p className={cn("font-medium truncate", task.status === "COMPLETED" && "line-through text-muted-foreground")}>{task.title}</p>
                 {task.description && (
                   <p className="text-xs text-muted-foreground truncate">
                     {task.description}

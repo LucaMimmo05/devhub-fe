@@ -18,6 +18,7 @@ export type ProjectType = {
   priority: Priority;
   dueDate?: string;
   ownerId: string;
+  ownerProfileId?: string;
   ownerUsername?: string;
   ownerAvatarUrl?: string;
   members: ProjectMemberSummary[];

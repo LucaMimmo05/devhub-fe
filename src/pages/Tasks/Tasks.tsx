@@ -7,7 +7,7 @@ import TaskSheet from "@/components/ui/TaskSheet";
 import type { HeaderType } from "../ProjectDetails/ProjectDetails";
 import DropdownFilter from "@/components/ui/DropdownFilter";
 import { Button } from "@/components/ui/button";
-import { getMyTasks } from "@/services/taskService";
+import { getMyTasks, updateTask } from "@/services/taskService";
 import type { TaskType } from "@/types/taskType";
 
 const STATUS_OPTIONS = [
@@ -55,6 +55,16 @@ const Tasks = () => {
   });
 
   const isFiltered = !!statusFilter || !!priorityFilter || !!filterText;
+
+  const handleToggleComplete = async (task: TaskType) => {
+    const newStatus = task.status === "COMPLETED" ? "PENDING" : "COMPLETED";
+    try {
+      const updated = await updateTask(task.id, { status: newStatus });
+      setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
+    } catch (err) {
+      console.error("Failed to toggle task:", err);
+    }
+  };
 
   return (
     <PageContainer className="space-y-3">
@@ -112,6 +122,7 @@ const Tasks = () => {
           hasBorder
           hasProject
           onEdit={setEditingTask}
+          onToggleComplete={handleToggleComplete}
         />
       )}
 
