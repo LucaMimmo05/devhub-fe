@@ -7,7 +7,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import NoData from "@/components/ui/NoData";
-import { Progress } from "@/components/ui/progress";
 import TaskTable from "@/components/ui/TaskTable";
 import TaskSheet from "@/components/ui/TaskSheet";
 import PageContainer from "@/layouts/PageContainer";
@@ -164,7 +163,6 @@ const ProjectDetails = () => {
   const [editPriority, setEditPriority] = useState<Priority>("MEDIUM");
   const [editStatus, setEditStatus] = useState<Status>("PENDING");
   const [editDueDate, setEditDueDate] = useState("");
-  const [editProgress, setEditProgress] = useState(0);
   const [savingEdit, setSavingEdit] = useState(false);
 
   // Member management
@@ -261,7 +259,6 @@ const ProjectDetails = () => {
     setEditPriority(project.priority);
     setEditStatus(project.status === "ARCHIVED" ? "PENDING" : project.status);
     setEditDueDate(project.dueDate ? project.dueDate.split("T")[0] : "");
-    setEditProgress(project.progress);
     setOpenEditModal(true);
   };
 
@@ -274,7 +271,6 @@ const ProjectDetails = () => {
         priority: editPriority,
         status: editStatus,
         dueDate: editDueDate ? new Date(editDueDate).toISOString() : undefined,
-        progress: editProgress,
         ownerId: project.ownerId,
       });
       setProject(updated);
@@ -373,10 +369,6 @@ const ProjectDetails = () => {
               )}
             </div>
 
-            <div className="space-y-1">
-              <p className="text-muted-foreground text-sm">{project.progress}% complete</p>
-              <Progress value={project.progress} className="h-1.5 w-full" />
-            </div>
           </div>
 
           {/* Tasks */}
@@ -527,6 +519,8 @@ const ProjectDetails = () => {
         onSaved={(updated) => setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)))}
         members={assignableMembers}
         canAssign={canAssignTask(editingTask)}
+        canEdit={canAssignTask(editingTask)}
+        onDeleted={(id) => setTasks((prev) => prev.filter((t) => t.id !== id))}
       />
 
       {/* Add Task Modal */}
@@ -657,25 +651,13 @@ const ProjectDetails = () => {
                 </Select>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-2">
-                <Label>Due Date</Label>
-                <Input
-                  type="date"
-                  value={editDueDate}
-                  onChange={(e) => setEditDueDate(e.target.value)}
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label>Progress (%)</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  max={100}
-                  value={editProgress}
-                  onChange={(e) => setEditProgress(Number(e.target.value))}
-                />
-              </div>
+            <div className="flex flex-col gap-2">
+              <Label>Due Date</Label>
+              <Input
+                type="date"
+                value={editDueDate}
+                onChange={(e) => setEditDueDate(e.target.value)}
+              />
             </div>
           </div>
           <div className="px-6 py-4 border-t flex justify-end gap-2">

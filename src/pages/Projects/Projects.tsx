@@ -45,7 +45,6 @@ const Projects = () => {
   const [priority, setPriority] = useState<Priority>("LOW");
   const [status, setStatus] = useState<Status>("PENDING");
   const [dueDate, setDueDate] = useState<Date | null>(null);
-  const [progress, setProgress] = useState<number>(0);
 
   useEffect(() => {
     getUserProject().then(setProjects).catch(console.error);
@@ -63,7 +62,6 @@ const Projects = () => {
     setPriority("LOW");
     setStatus("PENDING");
     setDueDate(null);
-    setProgress(0);
   };
 
   const handleCreate = async () => {
@@ -78,7 +76,6 @@ const Projects = () => {
       priority,
       status,
       dueDate: dueDate ? dueDate.toISOString() : undefined,
-      progress,
     };
 
     try {
@@ -105,7 +102,6 @@ const Projects = () => {
       priority: project.priority,
       status: "ARCHIVED",
       dueDate: project.dueDate,
-      progress: project.progress,
       ownerId: project.ownerId,
     });
     setProjects((prev) => prev.map((p) => (p.id === id ? updated : p)));
@@ -187,18 +183,6 @@ const Projects = () => {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Enter project description"
-              />
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="progress">Progress (%)</Label>
-              <Input
-                id="progress"
-                type="number"
-                min={0}
-                max={100}
-                value={progress}
-                onChange={(e) => setProgress(Number(e.target.value))}
               />
             </div>
 

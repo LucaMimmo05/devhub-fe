@@ -22,7 +22,6 @@ export type ProjectType = {
   ownerUsername?: string;
   ownerAvatarUrl?: string;
   members: ProjectMemberSummary[];
-  progress: number;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -36,5 +35,4 @@ export type ProjectRequest = {
   dueDate?: string;
   ownerId: string;
   memberIds?: string[];
-  progress: number;
 };
