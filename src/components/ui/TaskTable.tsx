@@ -10,9 +10,10 @@ import {
 import { Checkbox } from "./checkbox";
 import PriorityBadge from "./PriorityBadge";
 import type { ColumnDef } from "@tanstack/react-table";
-import type { HeaderType } from "@/pages/ProjectDetails/ProjectDetails";
+import type { HeaderType } from "@/pages/ProjectDetails/projectDetailsUtils";
 import { cn } from "@/lib/utils";
 import NoData from "./NoData";
+import { FolderKanban } from "lucide-react";
 
 type TasksProps = {
   data: TaskType[];
@@ -24,6 +25,7 @@ type TasksProps = {
   hasProject?: boolean;
   onEdit?: (task: TaskType) => void;
   onToggleComplete?: (task: TaskType) => void;
+  onGoToProject?: (task: TaskType) => void;
 };
 
 const formatDate = (dateStr?: string) => {
@@ -57,6 +59,7 @@ const TaskTable = ({
   hasProject,
   onEdit,
   onToggleComplete,
+  onGoToProject,
 }: TasksProps) => {
   if (!data || data.length === 0) {
     return <NoData resource="Tasks" />;
@@ -66,7 +69,7 @@ const TaskTable = ({
     <div className={cn("rounded-md", hasBorder && "border border-border")}>
       <Table className="min-w-[540px]">
         <colgroup>
-          {hasCheckbok && <col style={{ width: "40px" }} />}
+          {(hasCheckbok || onGoToProject) && <col style={{ width: "44px" }} />}
           <col />
           <col style={{ width: "120px" }} />
           <col style={{ width: "100px" }} />
@@ -88,7 +91,23 @@ const TaskTable = ({
               className={onEdit ? "cursor-pointer" : ""}
               onClick={() => onEdit?.(task)}
             >
-              {hasCheckbok && (
+              {onGoToProject && (
+                <TableCell onClick={(e) => e.stopPropagation()}>
+                  {task.projectId ? (
+                    <button
+                      onClick={() => onGoToProject(task)}
+                      className="flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                      title={task.projectTitle ?? "Go to project"}
+                    >
+                      <FolderKanban className="h-3.5 w-3.5" />
+                    </button>
+                  ) : (
+                    <span className="inline-block h-7 w-7" />
+                  )}
+                </TableCell>
+              )}
+
+              {!onGoToProject && hasCheckbok && (
                 <TableCell onClick={(e) => e.stopPropagation()}>
                   <Checkbox
                     checked={task.status === "COMPLETED"}

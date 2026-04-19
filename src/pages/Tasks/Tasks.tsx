@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import TaskTable from "@/components/ui/TaskTable";
 import PageContainer from "@/layouts/PageContainer";
 import { CheckSquare, Filter, Loader2, X } from "lucide-react";
 import TaskSheet from "@/components/ui/TaskSheet";
-import type { HeaderType } from "../ProjectDetails/ProjectDetails";
+import type { HeaderType } from "../ProjectDetails/projectDetailsUtils";
 import DropdownFilter from "@/components/ui/DropdownFilter";
 import { Button } from "@/components/ui/button";
-import { getMyTasks, updateTask } from "@/services/taskService";
+import { getMyTasks } from "@/services/taskService";
 import type { TaskType } from "@/types/taskType";
 import { useAuth } from "@/context/AuthContext";
 
@@ -33,6 +34,7 @@ const Tasks = () => {
     { label: "Project", id: 5 },
   ];
 
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [tasks, setTasks] = useState<TaskType[]>([]);
   const [loading, setLoading] = useState(true);
@@ -80,17 +82,6 @@ const Tasks = () => {
     setPriorityFilter(undefined);
     setFilterText("");
     fetchTasks();
-  };
-
-  const handleToggleComplete = async (task: TaskType) => {
-    const newStatus = task.status === "COMPLETED" ? "PENDING" : "COMPLETED";
-    try {
-      await updateTask(task.id, { status: newStatus });
-      const { status, priority, search } = currentFilters.current;
-      fetchTasks(status, priority, search);
-    } catch (err) {
-      console.error("Failed to toggle task:", err);
-    }
   };
 
   const isFiltered = !!statusFilter || !!priorityFilter || !!filterText;
@@ -158,11 +149,10 @@ const Tasks = () => {
           data={tasks}
           columns={[]}
           header={taskHeader}
-          hasCheckbok
           hasBorder
           hasProject
           onEdit={setEditingTask}
-          onToggleComplete={handleToggleComplete}
+          onGoToProject={(task) => { if (task.projectId) navigate(`/projects/${task.projectId}`); }}
         />
       )}
 
