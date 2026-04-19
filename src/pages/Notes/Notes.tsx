@@ -1,205 +1,308 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useHeaderActions } from "@/context/HeaderActionsContext";
 import { getMyNotes, createNote, updateNote, deleteNote } from "@/services/noteService";
 import type { NoteType } from "@/types/noteType";
-
-import PageContainer from "@/layouts/PageContainer";
-import Modal from "@/components/ui/Modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Edit2, Loader2, StickyNote, Trash2 } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, Loader2, Plus, Search, StickyNote, Trash2 } from "lucide-react";
 import { timeSince } from "@/utils/getRelativeTime";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { cn } from "@/lib/utils";
+
+const proseClass = [
+  "text-sm text-foreground leading-relaxed",
+  "[&_h1]:text-2xl [&_h1]:font-bold [&_h1]:mb-3 [&_h1]:mt-5 [&_h1]:first:mt-0",
+  "[&_h2]:text-xl [&_h2]:font-semibold [&_h2]:mb-2 [&_h2]:mt-4",
+  "[&_h3]:text-lg [&_h3]:font-semibold [&_h3]:mb-2 [&_h3]:mt-3",
+  "[&_p]:mb-3",
+  "[&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-3",
+  "[&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-3",
+  "[&_li]:mb-1",
+  "[&_code]:bg-muted [&_code]:rounded [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-xs",
+  "[&_pre]:bg-muted [&_pre]:rounded-md [&_pre]:p-4 [&_pre]:mb-3 [&_pre]:overflow-x-auto",
+  "[&_pre_code]:bg-transparent [&_pre_code]:p-0",
+  "[&_blockquote]:border-l-4 [&_blockquote]:border-border [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-muted-foreground [&_blockquote]:mb-3",
+  "[&_a]:text-primary [&_a]:underline",
+  "[&_hr]:border-border [&_hr]:my-4",
+  "[&_strong]:font-semibold",
+  "[&_table]:w-full [&_table]:border-collapse [&_table]:mb-3 [&_table]:text-sm",
+  "[&_th]:border [&_th]:border-border [&_th]:px-3 [&_th]:py-1.5 [&_th]:bg-muted [&_th]:font-semibold [&_th]:text-left",
+  "[&_td]:border [&_td]:border-border [&_td]:px-3 [&_td]:py-1.5",
+].join(" ");
 
 const Notes = () => {
   const { setOnCreate } = useHeaderActions();
 
   const [notes, setNotes] = useState<NoteType[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [selectedNote, setSelectedNote] = useState<NoteType | null>(null);
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [isDirty, setIsDirty] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const [creating, setCreating] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [search, setSearch] = useState("");
+  const [showEditor, setShowEditor] = useState(false);
+  const [showPreview, setShowPreview] = useState(true);
 
-  // Create modal
-  const [openCreate, setOpenCreate] = useState(false);
-  const [newTitle, setNewTitle] = useState("");
-  const [newContent, setNewContent] = useState("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const autoSaveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const selectedNoteRef = useRef<NoteType | null>(null);
 
-  // Edit sheet
-  const [editingNote, setEditingNote] = useState<NoteType | null>(null);
-  const [editTitle, setEditTitle] = useState("");
-  const [editContent, setEditContent] = useState("");
+  useEffect(() => { selectedNoteRef.current = selectedNote; }, [selectedNote]);
 
   useEffect(() => {
     getMyNotes().then(setNotes).catch(console.error);
   }, []);
 
   useEffect(() => {
-    setOnCreate?.(() => () => setOpenCreate(true));
+    setOnCreate?.(() => () => handleCreateNote());
     return () => setOnCreate?.(undefined);
   }, [setOnCreate]);
 
-  const openEdit = (note: NoteType) => {
-    setEditingNote(note);
-    setEditTitle(note.title);
-    setEditContent(note.content ?? "");
+  const filteredNotes = notes.filter((n) =>
+    n.title.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const selectNote = (note: NoteType) => {
+    setSelectedNote(note);
+    setTitle(note.title);
+    setContent(note.content ?? "");
+    setIsDirty(false);
+    setConfirmDelete(false);
+    setShowEditor(true);
+    setTimeout(() => textareaRef.current?.focus(), 50);
   };
 
-  const handleCreate = async () => {
-    if (!newTitle.trim()) return;
-    setLoading(true);
+  const handleCreateNote = async () => {
+    setCreating(true);
     try {
-      const created = await createNote({ title: newTitle, content: newContent });
+      const created = await createNote({ title: "Untitled", content: "" });
       setNotes((prev) => [created, ...prev]);
-      setOpenCreate(false);
-      setNewTitle("");
-      setNewContent("");
+      selectNote(created);
     } catch (err) {
       console.error("Failed to create note:", err);
     } finally {
-      setLoading(false);
+      setCreating(false);
     }
   };
 
-  const handleSaveEdit = async () => {
-    if (!editingNote || !editTitle.trim()) return;
-    setLoading(true);
+  const saveNote = useCallback(async (noteId: string, t: string, c: string) => {
+    if (!t.trim()) return;
+    setSaving(true);
+    setSaveStatus("saving");
     try {
-      const updated = await updateNote(editingNote.id, { title: editTitle, content: editContent });
+      const updated = await updateNote(noteId, { title: t, content: c });
       setNotes((prev) => prev.map((n) => (n.id === updated.id ? updated : n)));
-      setEditingNote(null);
+      setSelectedNote(updated);
+      setIsDirty(false);
+      setSaveStatus("saved");
+      setTimeout(() => setSaveStatus("idle"), 2000);
     } catch (err) {
-      console.error("Failed to update note:", err);
+      console.error("Failed to save note:", err);
+      setSaveStatus("idle");
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
+  }, []);
+
+  const scheduleAutoSave = useCallback((t: string, c: string) => {
+    if (autoSaveTimeout.current) clearTimeout(autoSaveTimeout.current);
+    autoSaveTimeout.current = setTimeout(() => {
+      const note = selectedNoteRef.current;
+      if (note) saveNote(note.id, t, c);
+    }, 1000);
+  }, [saveNote]);
+
+  const handleSave = () => {
+    if (autoSaveTimeout.current) clearTimeout(autoSaveTimeout.current);
+    const note = selectedNoteRef.current;
+    if (note) saveNote(note.id, title, content);
   };
 
-  const handleDelete = async (noteId: string) => {
+  const handleDelete = async () => {
+    if (!selectedNote) return;
     try {
-      await deleteNote(noteId);
-      setNotes((prev) => prev.filter((n) => n.id !== noteId));
+      await deleteNote(selectedNote.id);
+      const remaining = notes.filter((n) => n.id !== selectedNote.id);
+      setNotes(remaining);
+      if (remaining.length > 0) {
+        selectNote(remaining[0]);
+      } else {
+        setSelectedNote(null);
+        setTitle("");
+        setContent("");
+        setShowEditor(false);
+      }
+      setConfirmDelete(false);
     } catch (err) {
       console.error("Failed to delete note:", err);
     }
   };
 
   return (
-    <PageContainer>
-      {notes.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] gap-4 text-center">
-          <StickyNote className="h-12 w-12 text-muted-foreground/40" />
-          <div>
-            <h3 className="font-semibold text-lg">No notes yet</h3>
-            <p className="text-muted-foreground text-sm">Create your first note to get started.</p>
+    <div className="flex h-full w-full overflow-hidden">
+
+      {/* ── Sidebar ─────────────────────────────────────────────────── */}
+      <div className={cn(
+        "flex flex-col border-r w-64 shrink-0 h-full",
+        showEditor ? "hidden lg:flex" : "flex w-full lg:w-64"
+      )}>
+        <div className="flex items-center gap-2 px-3 py-3 border-b">
+          <div className="relative flex-1">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search notes..."
+              className="pl-8 h-8 text-sm"
+            />
           </div>
-          <Button onClick={() => setOpenCreate(true)}>New Note</Button>
+          <Button size="icon" variant="outline" className="h-8 w-8 shrink-0" onClick={handleCreateNote} disabled={creating}>
+            {creating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
+          </Button>
         </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {notes.map((note) => (
-            <Card
-              key={note.id}
-              className="flex flex-col group cursor-pointer hover:border-primary/50 transition-colors"
-              onClick={() => openEdit(note)}
-            >
-              <CardHeader className="pb-2">
-                <div className="flex items-start justify-between gap-2">
-                  <CardTitle className="text-base line-clamp-1">{note.title}</CardTitle>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={(e) => { e.stopPropagation(); openEdit(note); }}
-                    >
-                      <Edit2 className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-destructive hover:text-destructive"
-                      onClick={(e) => { e.stopPropagation(); handleDelete(note.id); }}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
+
+        <div className="flex-1 overflow-y-auto p-2 flex flex-col gap-0.5">
+          {filteredNotes.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full gap-2 text-center px-4">
+              <StickyNote className="h-8 w-8 text-muted-foreground/30" />
+              <p className="text-xs text-muted-foreground">
+                {search ? "No notes match your search." : "No notes yet. Click + to create one."}
+              </p>
+            </div>
+          ) : (
+            filteredNotes.map((note) => {
+              const isSelected = selectedNote?.id === note.id;
+              return (
+                <button
+                  key={note.id}
+                  onClick={() => selectNote(note)}
+                  className={cn(
+                    "w-full text-left px-3 py-2.5 rounded-md transition-colors border",
+                    isSelected
+                      ? "bg-primary/10 border-primary/20 text-primary"
+                      : "border-transparent hover:bg-muted text-foreground"
+                  )}
+                >
+                  {/* Show live title for selected note, saved title for others */}
+                  <p className="text-sm font-medium truncate">
+                    {isSelected ? (title || "Untitled") : (note.title || "Untitled")}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{timeSince(note.updatedAt)}</p>
+                </button>
+              );
+            })
+          )}
+        </div>
+      </div>
+
+      {/* ── Editor ──────────────────────────────────────────────────── */}
+      <div className={cn(
+        "flex flex-col flex-1 h-full min-w-0",
+        !showEditor && "hidden lg:flex"
+      )}>
+        {!selectedNote ? (
+          <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
+            <StickyNote className="h-12 w-12 opacity-20" />
+            <p className="text-sm">Select a note or create a new one</p>
+            <Button variant="outline" size="sm" onClick={handleCreateNote} disabled={creating}>
+              {creating ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Plus className="h-3.5 w-3.5 mr-1" />}
+              New Note
+            </Button>
+          </div>
+        ) : (
+          <>
+            {/* Toolbar */}
+            <div className="flex items-center gap-2 px-4 py-2 border-b shrink-0">
+              <Button size="icon" variant="ghost" className="h-7 w-7 lg:hidden" onClick={() => setShowEditor(false)}>
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <Input
+                value={title}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setTitle(v);
+                  setIsDirty(true);
+                  scheduleAutoSave(v, content);
+                }}
+                placeholder="Note title"
+                className="border-0 shadow-none text-base font-semibold px-0 h-8 focus-visible:ring-0 flex-1"
+              />
+              <div className="flex items-center gap-1.5 shrink-0">
+                {saving && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
+                {!saving && saveStatus === "saved" && <span className="text-xs text-muted-foreground">Saved</span>}
+                {!saving && saveStatus === "idle" && isDirty && <span className="text-xs text-muted-foreground">Unsaved</span>}
+
+                <Button
+                  size="icon"
+                  variant={showPreview ? "default" : "outline"}
+                  className="h-8 w-8"
+                  onClick={() => setShowPreview((v) => !v)}
+                  title={showPreview ? "Hide preview" : "Show preview"}
+                >
+                  {showPreview ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+
+                <Button size="sm" onClick={handleSave} disabled={saving || !title.trim()}>
+                  {saving && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />}
+                  Save
+                </Button>
+
+                {!confirmDelete ? (
+                  <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setConfirmDelete(true)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                ) : (
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-destructive">Delete?</span>
+                    <Button size="sm" variant="destructive" onClick={handleDelete}>Yes</Button>
+                    <Button size="sm" variant="outline" onClick={() => setConfirmDelete(false)}>No</Button>
                   </div>
+                )}
+              </div>
+            </div>
+
+            {/* Content area */}
+            {showPreview ? (
+              /* Split: write top, live preview bottom */
+              <div className="flex flex-col flex-1 min-h-0">
+                <textarea
+                  ref={textareaRef}
+                  value={content}
+                  onChange={(e) => { const v = e.target.value; setContent(v); setIsDirty(true); scheduleAutoSave(title, v); }}
+                  placeholder={"# Start writing...\n\nSupports **markdown** syntax."}
+                  className="w-full resize-none p-6 font-mono text-sm bg-transparent focus:outline-none leading-relaxed border-b"
+                  style={{ height: "50%", minHeight: 0 }}
+                  spellCheck={false}
+                />
+                <div className="overflow-y-auto p-6" style={{ height: "50%" }}>
+                  {content.trim() ? (
+                    <div className={proseClass}>
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground italic">Nothing to preview.</p>
+                  )}
                 </div>
-              </CardHeader>
-              <CardContent className="flex-1">
-                <p className="text-sm text-muted-foreground line-clamp-4 whitespace-pre-wrap">
-                  {note.content || <span className="italic">No content</span>}
-                </p>
-                <p className="text-xs text-muted-foreground/60 mt-3">
-                  {timeSince(note.updatedAt)}
-                </p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      {/* Create modal */}
-      <Modal
-        open={openCreate}
-        onOpenChange={() => { setOpenCreate(false); setNewTitle(""); setNewContent(""); }}
-        title="New Note"
-        description="Write something down."
-        footer={
-          <div className="flex justify-end gap-2">
-            <Button onClick={handleCreate} disabled={loading || !newTitle.trim()}>
-              {loading && <Loader2 className="animate-spin h-4 w-4 mr-2" />}
-              Create
-            </Button>
-            <Button variant="outline" onClick={() => setOpenCreate(false)}>Cancel</Button>
-          </div>
-        }
-      >
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-2">
-            <Label>Title</Label>
-            <Input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="Note title" />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label>Content</Label>
-            <Textarea value={newContent} onChange={(e) => setNewContent(e.target.value)} placeholder="Write your note here..." rows={8} />
-          </div>
-        </div>
-      </Modal>
-
-      {/* Edit sheet */}
-      <Sheet open={!!editingNote} onOpenChange={(open) => !open && setEditingNote(null)}>
-        <SheetContent className="flex flex-col gap-0 p-0 sm:max-w-md">
-          <SheetHeader className="px-6 py-5 border-b">
-            <SheetTitle>Edit Note</SheetTitle>
-            <SheetDescription>{editingNote?.title}</SheetDescription>
-          </SheetHeader>
-          <div className="flex flex-col gap-5 px-6 py-5 flex-1 overflow-y-auto">
-            <div className="flex flex-col gap-2">
-              <Label>Title</Label>
-              <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label>Content</Label>
-              <Textarea value={editContent} onChange={(e) => setEditContent(e.target.value)} rows={12} placeholder="Write your note here..." />
-            </div>
-          </div>
-          <div className="px-6 py-4 border-t flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setEditingNote(null)}>Cancel</Button>
-            <Button onClick={handleSaveEdit} disabled={loading || !editTitle.trim()}>
-              {loading && <Loader2 className="animate-spin h-4 w-4 mr-2" />}
-              Save
-            </Button>
-          </div>
-        </SheetContent>
-      </Sheet>
-    </PageContainer>
+              </div>
+            ) : (
+              /* Write only */
+              <textarea
+                ref={textareaRef}
+                value={content}
+                onChange={(e) => { const v = e.target.value; setContent(v); setIsDirty(true); scheduleAutoSave(title, v); }}
+                placeholder={"# Start writing...\n\nSupports **markdown** syntax."}
+                className="flex-1 w-full resize-none p-6 font-mono text-sm bg-transparent focus:outline-none leading-relaxed"
+                spellCheck={false}
+              />
+            )}
+          </>
+        )}
+      </div>
+    </div>
   );
 };
 
