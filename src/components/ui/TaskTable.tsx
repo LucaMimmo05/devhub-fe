@@ -22,6 +22,7 @@ type TasksProps = {
   hasAssignedTo?: boolean;
   hasBorder?: boolean;
   hasProject?: boolean;
+  onEdit?: (task: TaskType) => void;
 };
 
 const formatDate = (dateStr?: string) => {
@@ -33,6 +34,19 @@ const formatDate = (dateStr?: string) => {
   });
 };
 
+export const statusLabel: Record<string, string> = {
+  PENDING: "Pending",
+  IN_PROGRESS: "In Progress",
+  COMPLETED: "Completed",
+  ARCHIVED: "Archived",
+};
+
+export const priorityLabel: Record<string, string> = {
+  LOW: "Low",
+  MEDIUM: "Medium",
+  HIGH: "High",
+};
+
 const TaskTable = ({
   data,
   header,
@@ -40,15 +54,24 @@ const TaskTable = ({
   hasAssignedTo,
   hasBorder,
   hasProject,
+  onEdit,
 }: TasksProps) => {
+  if (!data || data.length === 0) {
+    return <NoData resource="Tasks" />;
+  }
+
   return (
-    <div
-      className={cn(
-        "overflow-x-auto rounded-md",
-        hasBorder && "border border-border"
-      )}
-    >
-      <Table className="min-w-150 table-auto bg-card">
+    <div className={cn("rounded-md", hasBorder && "border border-border")}>
+      <Table className="min-w-[540px]">
+        <colgroup>
+          {hasCheckbok && <col style={{ width: "40px" }} />}
+          <col />
+          <col style={{ width: "120px" }} />
+          <col style={{ width: "100px" }} />
+          <col style={{ width: "110px" }} />
+          {hasAssignedTo && <col style={{ width: "120px" }} />}
+          {hasProject && <col style={{ width: "130px" }} />}
+        </colgroup>
         <TableHeader>
           <TableRow>
             {header.map((head) => (
@@ -57,62 +80,57 @@ const TaskTable = ({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {data && data.length > 0 ? (
-            data.map((task) => (
-              <TableRow key={task.id}>
-                {hasCheckbok && (
-                  <TableCell>
-                    <Checkbox />
-                  </TableCell>
-                )}
-
-                <TableCell className="p-3">
-                  <p>{task.title}</p>
-                </TableCell>
-
+          {data.map((task) => (
+            <TableRow
+              key={task.id}
+              className={onEdit ? "cursor-pointer" : ""}
+              onClick={() => onEdit?.(task)}
+            >
+              {hasCheckbok && (
                 <TableCell>
-                  <PriorityBadge data={task.status}>
-                    <p>{task.status}</p>
-                  </PriorityBadge>
+                  <Checkbox />
                 </TableCell>
+              )}
 
-                <TableCell>
-                  <PriorityBadge data={task.priority}>
-                    <p>{task.priority}</p>
-                  </PriorityBadge>
-                </TableCell>
-
-                <TableCell>
-                  <p>{formatDate(task.dueDate)}</p>
-                </TableCell>
-
-                {hasAssignedTo && (
-                  <TableCell>
-                    <p className="text-sm text-muted-foreground">
-                      {task.assignedToUsername ?? "—"}
-                    </p>
-                  </TableCell>
+              <TableCell>
+                <p className="font-medium truncate">{task.title}</p>
+                {task.description && (
+                  <p className="text-xs text-muted-foreground truncate">
+                    {task.description}
+                  </p>
                 )}
-
-                {hasProject && (
-                  <TableCell>
-                    <p className="text-sm text-muted-foreground">
-                      {task.projectTitle ?? "—"}
-                    </p>
-                  </TableCell>
-                )}
-              </TableRow>
-            ))
-          ) : (
-            <TableRow className="h-24 hover:bg-transparent">
-              <TableCell
-                colSpan={header.length}
-                className="text-center align-middle"
-              >
-                <NoData resource="Tasks" />
               </TableCell>
+
+              <TableCell>
+                <PriorityBadge data={task.status}>
+                  {statusLabel[task.status] ?? task.status}
+                </PriorityBadge>
+              </TableCell>
+
+              <TableCell>
+                <PriorityBadge data={task.priority}>
+                  {priorityLabel[task.priority] ?? task.priority}
+                </PriorityBadge>
+              </TableCell>
+
+              <TableCell className="text-sm text-muted-foreground">
+                {formatDate(task.dueDate)}
+              </TableCell>
+
+              {hasAssignedTo && (
+                <TableCell className="text-sm text-muted-foreground truncate">
+                  {task.assignedToUsername ?? "—"}
+                </TableCell>
+              )}
+
+              {hasProject && (
+                <TableCell className="text-sm text-muted-foreground truncate">
+                  {task.projectTitle ?? "—"}
+                </TableCell>
+              )}
+
             </TableRow>
-          )}
+          ))}
         </TableBody>
       </Table>
     </div>

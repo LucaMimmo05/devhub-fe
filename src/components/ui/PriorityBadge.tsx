@@ -6,9 +6,11 @@ import type { Priority, Status } from "@/types/PriorityAndStatusType";
 const PriorityBadge = ({
   data,
   children,
+  className,
 }: {
   data: Priority | Status;
   children: ReactNode;
+  className?: string;
 }) => {
   const colorMap: Record<Priority | Status, string> = {
     HIGH: "bg-red-700 text-red-200",
@@ -17,6 +19,7 @@ const PriorityBadge = ({
     PENDING: "bg-red-700 text-red-200",
     IN_PROGRESS: "bg-yellow-700 text-yellow-200",
     COMPLETED: "bg-green-700 text-green-200",
+    ARCHIVED: "bg-gray-600 text-gray-200",
   };
 
   return (
@@ -24,7 +27,8 @@ const PriorityBadge = ({
       className={cn(
         "text-xs px-2 py-0.5 whitespace-nowrap shrink-0 truncate",
         "hover:bg-inset transition-colors duration-150",
-        colorMap[data] // applica la classe corretta
+        colorMap[data],
+        className
       )}
     >
       {children}

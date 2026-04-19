@@ -1,7 +1,12 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useHeaderActions } from "@/context/HeaderActionsContext";
-import { createProject, getUserProject } from "@/services/projectService";
+import {
+  createProject,
+  getUserProject,
+  deleteProject,
+  updateProject,
+} from "@/services/projectService";
 import type { ProjectRequest, ProjectType } from "@/types/projectType";
 
 import PageContainer from "@/layouts/PageContainer";
@@ -23,19 +28,20 @@ import {
 
 import type { Priority, Status } from "@/types/PriorityAndStatusType";
 
+const TABS = ["Active", "Archived"] as const;
+type Tab = (typeof TABS)[number];
+
 const Projects = () => {
   const { user } = useAuth();
   const { setOnCreate } = useHeaderActions();
 
   const [projects, setProjects] = useState<ProjectType[]>([]);
+  const [activeTab, setActiveTab] = useState<Tab>("Active");
   const [openModal, setOpenModal] = useState(false);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [imgUrl, setImgUrl] = useState("");
-  const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState("");
-  const [memberIds, setMemberIds] = useState<string[]>([]);
+  const [imgUrl] = useState("");
   const [priority, setPriority] = useState<Priority>("LOW");
   const [status, setStatus] = useState<Status>("PENDING");
   const [dueDate, setDueDate] = useState<Date | null>(null);
@@ -54,10 +60,6 @@ const Projects = () => {
     setOpenModal(false);
     setTitle("");
     setDescription("");
-    setImgUrl("");
-    setFile(null);
-    setPreview("");
-    setMemberIds([]);
     setPriority("LOW");
     setStatus("PENDING");
     setDueDate(null);
@@ -72,7 +74,7 @@ const Projects = () => {
       description,
       imageUrl: imgUrl || undefined,
       ownerId: user.id,
-      memberIds,
+      memberIds: [],
       priority,
       status,
       dueDate: dueDate ? dueDate.toISOString() : undefined,
@@ -85,21 +87,68 @@ const Projects = () => {
       handleClose();
     } catch (err) {
       console.error("Error creating project:", err);
-      alert("Failed to create project. Check console for details.");
     }
   };
 
+  const handleDelete = async (id: string) => {
+    await deleteProject(id);
+    setProjects((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  const handleArchive = async (id: string) => {
+    const project = projects.find((p) => p.id === id);
+    if (!project) return;
+    const updated = await updateProject(id, {
+      title: project.title,
+      description: project.description,
+      imageUrl: project.imageUrl,
+      priority: project.priority,
+      status: "ARCHIVED",
+      dueDate: project.dueDate,
+      progress: project.progress,
+      ownerId: project.ownerId,
+    });
+    setProjects((prev) => prev.map((p) => (p.id === id ? updated : p)));
+  };
+
+  const displayed = projects.filter((p) =>
+    activeTab === "Archived" ? p.status === "ARCHIVED" : p.status !== "ARCHIVED"
+  );
+
   return (
     <PageContainer>
-      {projects.length > 0 ? (
+      <div className="flex gap-2 mb-4">
+        {TABS.map((tab) => (
+          <Button
+            key={tab}
+            variant={activeTab === tab ? "default" : "outline"}
+            size="sm"
+            onClick={() => setActiveTab(tab)}
+          >
+            {tab}
+            <span className="ml-1.5 text-xs opacity-70">
+              {tab === "Archived"
+                ? projects.filter((p) => p.status === "ARCHIVED").length
+                : projects.filter((p) => p.status !== "ARCHIVED").length}
+            </span>
+          </Button>
+        ))}
+      </div>
+
+      {displayed.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-          {projects.map((project) => (
-            <ProjectCard key={project.id} project={project} />
+          {displayed.map((project) => (
+            <ProjectCard
+              key={project.id}
+              project={project}
+              onDelete={handleDelete}
+              onArchive={handleArchive}
+            />
           ))}
         </div>
       ) : (
-        <div className="relative w-full h-[calc(100vh-200px)] flex justify-center items-center">
-          <NoData resource="Projects" />
+        <div className="relative w-full h-[calc(100vh-260px)] flex justify-center items-center">
+          <NoData resource={activeTab === "Archived" ? "Archived Projects" : "Projects"} />
         </div>
       )}
 
@@ -157,8 +206,7 @@ const Projects = () => {
               <Label htmlFor="dueDate">Due Date</Label>
               <Input
                 id="dueDate"
-                type="text"
-                placeholder="YYYY-MM-DD"
+                type="date"
                 value={dueDate ? dueDate.toISOString().split("T")[0] : ""}
                 onChange={(e) =>
                   setDueDate(e.target.value ? new Date(e.target.value) : null)
@@ -168,31 +216,6 @@ const Projects = () => {
           </div>
 
           <div className="flex flex-col gap-4">
-          
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="imageFile">Upload Image</Label>
-              <Input
-                className="py-5 text-center"
-                id="imageFile"
-                type="file"
-                accept="image/*"
-                onChange={(e) => {
-                  const selected = e.target.files?.[0];
-                  if (selected) {
-                    setFile(selected);
-                    setPreview(URL.createObjectURL(selected));
-                  }
-                }}
-              />
-              {preview && (
-                <img
-                  src={preview}
-                  alt="preview"
-                  className="mt-2 w-40 h-40 object-cover rounded"
-                />
-              )}
-            </div>
-
             <div className="flex flex-col gap-2">
               <Label htmlFor="priority">Priority</Label>
               <Select
