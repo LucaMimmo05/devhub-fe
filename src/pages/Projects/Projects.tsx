@@ -76,7 +76,7 @@ const Projects = () => {
 
     const newProject: ProjectRequest = {
       title: title.trim(),
-      description: description.trim() || undefined,
+      description: description.trim(),
       imageUrl: imgUrl || undefined,
       ownerId: user.id,
       memberIds: [],
