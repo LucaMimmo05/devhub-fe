@@ -18,7 +18,6 @@ const Login = () => {
 
     try {
       await login(email, password);
-      toast.success("Welcome back!");
       navigate("/", { replace: true });
     } catch (err: unknown) {
       const msg =

@@ -4,22 +4,35 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, ArrowLeft, ShieldCheck } from "lucide-react";
+import { Loader2, ArrowLeft, ShieldCheck, KeyRound, Mail } from "lucide-react";
 import axios from "axios";
 import { API_URL } from "@/services";
+
+type Step = "otp" | "password";
 
 const ResetPassword = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const prefillEmail = (location.state as { email?: string } | null)?.email ?? "";
 
-  const [email, setEmail] = useState(prefillEmail);
+  const [step, setStep] = useState<Step>("otp");
+  const [email] = useState(prefillEmail);
   const [otp, setOtp] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleVerifyOtp = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (otp.length < 6) {
+      toast.error("Enter the 6-digit code.");
+      return;
+    }
+    setStep("password");
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
       toast.error("Passwords do not match.");
@@ -39,88 +52,139 @@ const ResetPassword = () => {
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
         "Invalid or expired code.";
       toast.error(msg);
+      // Se il codice era sbagliato, torniamo allo step OTP
+      setOtp("");
+      setStep("otp");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    if (!email) return;
+    setResending(true);
+    try {
+      await axios.post(`${API_URL}/auth/resend-reset-otp`, { email });
+      toast.success("A new code has been sent to your email.");
+    } catch {
+      toast.error("Failed to resend the code. Try again.");
+    } finally {
+      setResending(false);
     }
   };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen px-4">
       <div className="w-full max-w-sm flex flex-col gap-6">
-        <div className="flex flex-col items-center gap-2 text-center">
-          <div className="bg-primary/10 rounded-full p-3">
-            <ShieldCheck className="h-7 w-7 text-primary" />
-          </div>
-          <h1 className="text-2xl font-bold">Reset your password</h1>
-          <p className="text-sm text-muted-foreground">
-            Enter the code we sent to your email and choose a new password.
-          </p>
-        </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          {!prefillEmail && (
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
+        {/* Step 1 — OTP */}
+        {step === "otp" && (
+          <>
+            <div className="flex flex-col items-center gap-2 text-center">
+              <div className="bg-primary/10 rounded-full p-3">
+                <Mail className="h-7 w-7 text-primary" />
+              </div>
+              <h1 className="text-2xl font-bold">Check your email</h1>
+              <p className="text-sm text-muted-foreground">
+                Enter the 6-digit code we sent to{" "}
+                <span className="font-medium text-foreground">{email || "your email"}</span>.
+              </p>
             </div>
-          )}
 
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="otp">Reset code</Label>
-            <Input
-              id="otp"
-              type="text"
-              inputMode="numeric"
-              maxLength={6}
-              placeholder="123456"
-              value={otp}
-              onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-              className="text-center text-lg tracking-widest"
-              autoFocus
-            />
-          </div>
+            <form onSubmit={handleVerifyOtp} className="flex flex-col gap-4">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="otp">Reset code</Label>
+                <Input
+                  id="otp"
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  placeholder="123456"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+                  className="text-center text-lg tracking-widest"
+                  autoFocus
+                />
+              </div>
+              <Button type="submit" disabled={otp.length < 6}>
+                Continue
+              </Button>
+            </form>
 
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="newPassword">New password</Label>
-            <Input
-              id="newPassword"
-              type="password"
-              placeholder="At least 6 characters"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-            />
-          </div>
+            <div className="text-center text-sm text-muted-foreground">
+              Didn't receive the code?{" "}
+              <button
+                type="button"
+                onClick={handleResend}
+                disabled={resending}
+                className="text-primary underline underline-offset-4 disabled:opacity-50"
+              >
+                {resending ? "Sending..." : "Resend"}
+              </button>
+            </div>
 
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="confirmPassword">Confirm password</Label>
-            <Input
-              id="confirmPassword"
-              type="password"
-              placeholder="Repeat your password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-            />
-          </div>
+            <Link
+              to="/auth/forgot-password"
+              className="flex items-center justify-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Use a different email
+            </Link>
+          </>
+        )}
 
-          <Button type="submit" disabled={loading || !otp || !newPassword || !confirmPassword}>
-            {loading && <Loader2 className="animate-spin h-4 w-4 mr-2" />}
-            Reset password
-          </Button>
-        </form>
+        {/* Step 2 — New password */}
+        {step === "password" && (
+          <>
+            <div className="flex flex-col items-center gap-2 text-center">
+              <div className="bg-primary/10 rounded-full p-3">
+                <ShieldCheck className="h-7 w-7 text-primary" />
+              </div>
+              <h1 className="text-2xl font-bold">Create new password</h1>
+              <p className="text-sm text-muted-foreground">
+                Choose a strong password for your account.
+              </p>
+            </div>
 
-        <Link
-          to="/auth/forgot-password"
-          className="flex items-center justify-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Request a new code
-        </Link>
+            <form onSubmit={handleResetPassword} className="flex flex-col gap-4">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="newPassword">New password</Label>
+                <Input
+                  id="newPassword"
+                  type="password"
+                  placeholder="At least 6 characters"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  autoFocus
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="confirmPassword">Confirm password</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  placeholder="Repeat your password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                />
+              </div>
+              <Button type="submit" disabled={loading || !newPassword || !confirmPassword}>
+                {loading && <Loader2 className="animate-spin h-4 w-4 mr-2" />}
+                Reset password
+              </Button>
+            </form>
+
+            <button
+              type="button"
+              onClick={() => setStep("otp")}
+              className="flex items-center justify-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to code
+            </button>
+          </>
+        )}
+
       </div>
     </div>
   );
