@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/AuthContext";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 const Login = () => {
   const { login } = useAuth();
@@ -17,9 +18,13 @@ const Login = () => {
 
     try {
       await login(email, password);
+      toast.success("Welcome back!");
       navigate("/", { replace: true });
-    } catch (err) {
-      console.error("Errore nel componente Login:", err);
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        "Invalid email or password.";
+      toast.error(msg);
     }
   };
 
@@ -39,9 +44,7 @@ const Login = () => {
         <Input
           id="email"
           type="email"
-          onChange={(e) => {
-            setEmail(e.target.value);
-          }}
+          onChange={(e) => setEmail(e.target.value)}
           placeholder="you@example.com"
         />
       </div>
@@ -50,9 +53,7 @@ const Login = () => {
         <Input
           id="password"
           type="password"
-          onChange={(e) => {
-            setPassword(e.target.value);
-          }}
+          onChange={(e) => setPassword(e.target.value)}
           placeholder="Your password"
         />
       </div>

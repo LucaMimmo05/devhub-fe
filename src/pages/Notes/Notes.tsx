@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/input";
 import { useHeaderActions } from "@/context/HeaderActionsContext";
 import { cn } from "@/lib/utils";
 import { createNote, deleteNote, getMyNotes, updateNote } from "@/services/noteService";
+import { toast } from "sonner";
 import type { NoteType } from "@/types/noteType";
 import { timeSince } from "@/utils/getRelativeTime";
 import { ArrowLeft, Eye, EyeOff, Loader2, Plus, Search, StickyNote, Trash2 } from "lucide-react";
@@ -63,7 +64,7 @@ const Notes = () => {
         const match = loaded.find((n) => n.id === targetId);
         if (match) selectNote(match);
       }
-    }).catch(console.error);
+    }).catch(() => toast.error("Failed to load notes."));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -92,8 +93,8 @@ const Notes = () => {
       const created = await createNote({ title: "Untitled", content: "" });
       setNotes((prev) => [created, ...prev]);
       selectNote(created);
-    } catch (err) {
-      console.error("Failed to create note:", err);
+    } catch {
+      toast.error("Failed to create note.");
     } finally {
       setCreating(false);
     }
@@ -110,8 +111,8 @@ const Notes = () => {
       setIsDirty(false);
       setSaveStatus("saved");
       setTimeout(() => setSaveStatus("idle"), 2000);
-    } catch (err) {
-      console.error("Failed to save note:", err);
+    } catch {
+      toast.error("Failed to save note.");
       setSaveStatus("idle");
     } finally {
       setSaving(false);
@@ -147,8 +148,9 @@ const Notes = () => {
         setShowEditor(false);
       }
       setConfirmDelete(false);
-    } catch (err) {
-      console.error("Failed to delete note:", err);
+      toast.success("Note deleted.");
+    } catch {
+      toast.error("Failed to delete note.");
     }
   };
 
