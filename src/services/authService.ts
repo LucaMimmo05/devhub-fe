@@ -28,3 +28,13 @@ export const logout = async () => {
   const response = await authApi.post(`/auth/logout`);
   return response.data;
 };
+
+export const verifyEmail = async (email: string, otp: string) => {
+  const response = await authApi.post(`/email/verify`, { email, otp });
+  return response.data;
+};
+
+export const resendVerificationEmail = async (email: string) => {
+  const response = await authApi.post(`/email/resend`, { email });
+  return response.data;
+};

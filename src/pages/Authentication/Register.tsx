@@ -25,8 +25,8 @@ const Register = () => {
 
     try {
       await register(fullName, username, email, password);
-      toast.success("Account created! Welcome to DevHub.");
-      navigate("/", { replace: true });
+      toast.success("Account created! Check your email for the verification code.");
+      navigate("/auth/verify-email", { replace: true, state: { email } });
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
