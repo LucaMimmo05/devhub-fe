@@ -54,7 +54,7 @@ const Projects = () => {
   }, []);
 
   useEffect(() => {
-    setOnCreate?.(() => () => setOpenModal(true));
+    setOnCreate?.(() => setOpenModal(true));
     return () => setOnCreate?.(undefined);
   }, [setOnCreate]);
 
@@ -131,6 +131,26 @@ const Projects = () => {
     }
   };
 
+  const handleUnarchive = async (id: string) => {
+    const project = projects.find((p) => p.id === id);
+    if (!project) return;
+    try {
+      const updated = await updateProject(id, {
+        title: project.title,
+        description: project.description,
+        imageUrl: project.imageUrl,
+        priority: project.priority,
+        status: "PENDING",
+        dueDate: project.dueDate,
+        ownerId: project.ownerId,
+      });
+      setProjects((prev) => prev.map((p) => (p.id === id ? updated : p)));
+      toast.success("Project unarchived.");
+    } catch {
+      toast.error("Failed to unarchive project.");
+    }
+  };
+
   const displayed = projects.filter((p) =>
     activeTab === "Archived" ? p.status === "ARCHIVED" : p.status !== "ARCHIVED"
   );
@@ -163,6 +183,7 @@ const Projects = () => {
               project={project}
               onDelete={handleDelete}
               onArchive={handleArchive}
+              onUnarchive={handleUnarchive}
             />
           ))}
         </div>

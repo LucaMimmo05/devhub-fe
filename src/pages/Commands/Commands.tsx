@@ -85,7 +85,7 @@ const Commands = () => {
   }, []);
 
   useEffect(() => {
-    setOnCreate?.(() => () => openCreate());
+    setOnCreate?.(() => openCreate());
     return () => setOnCreate?.(undefined);
   }, [setOnCreate]);
 
