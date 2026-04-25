@@ -60,9 +60,7 @@ const AppLayout = () => {
   return (
     <SidebarProvider>
       <div className="flex h-screen w-full overflow-hidden">
-        <aside className="hidden md:block w-48 shrink-0">
-          <AppSidebar />
-        </aside>
+        <AppSidebar />
 
         <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
           <HeaderActionsProvider value={{

@@ -25,22 +25,26 @@ const PageHeader = ({
   const fullName =
     user?.firstName && user?.lastName
       ? `${user.firstName} ${user.lastName}`
-      : "User";
+      : user?.username ?? "User";
 
   const isHome = location.pathname === "/";
+  const pageTitle = isHome ? `Welcome back, ${fullName}!` : title;
 
   return (
-    <header className="sticky top-0 z-20 flex h-14 w-full items-center justify-between md:justify-end lg:justify-between border-b bg-background px-3 sm:px-4 md:px-6">
-      <SidebarTrigger className="md:hidden"></SidebarTrigger>
-      <h1 className="text-lg hidden lg:block font-semibold">
-        {isHome ? `Welcome back, ${fullName}!` : title}
-      </h1>
+    <header className="sticky top-0 z-20 flex h-14 w-full items-center gap-2 border-b bg-background px-3 sm:px-4 md:px-6">
+      <SidebarTrigger className="md:hidden shrink-0" />
 
-      <div className="flex items-center gap-2">
+      {pageTitle && (
+        <h1 className="text-base md:text-lg font-semibold truncate flex-1 min-w-0">
+          {pageTitle}
+        </h1>
+      )}
+
+      <div className="flex items-center gap-2 ml-auto shrink-0">
         {showSearch && !isSearching && (
           <button
             onClick={handleClick}
-            className="flex items-center gap-2 h-9 rounded-lg border border-border bg-muted/40 hover:bg-muted transition-colors px-3 text-sm text-muted-foreground md:w-56 w-9 justify-center md:justify-start"
+            className="flex items-center gap-2 h-9 rounded-lg border border-border bg-muted/40 hover:bg-muted transition-colors px-3 text-sm text-muted-foreground md:w-52 w-9 justify-center md:justify-start"
           >
             <Search className="h-3.5 w-3.5 shrink-0" />
             <span className="hidden md:inline flex-1 text-left">Search…</span>
