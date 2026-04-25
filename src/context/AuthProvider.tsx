@@ -45,14 +45,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const register = async (fullName: string, username: string, email: string, password: string) => {
     setStatus("loading");
     try {
-      const data = await registerService(fullName, username, email, password);
-      localStorage.setItem("accessToken", data.accessToken);
-      if (data.userProfile) {
-        localStorage.setItem("userData", JSON.stringify(data.userProfile));
-        setUser(JSON.parse(JSON.stringify(data.userProfile)));
-      }
-      axios.defaults.headers.common["Authorization"] = `Bearer ${data.accessToken}`;
-      setStatus("authenticated");
+      await registerService(fullName, username, email, password);
+      // Non autentichiamo subito: l'utente deve prima verificare l'email
+      setStatus("unauthenticated");
     } catch (error) {
       setStatus("unauthenticated");
       throw error;
