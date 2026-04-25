@@ -213,7 +213,7 @@ const Commands = () => {
           <Loader2 className="animate-spin h-6 w-6 text-muted-foreground" />
         </div>
       ) : commands.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-[calc(100vh-280px)] gap-4 text-center">
+        <div className="flex flex-col items-center justify-center min-h-48 flex-1 gap-4 text-center">
           <Terminal className="h-12 w-12 text-muted-foreground/30" />
           <div>
             <h3 className="font-semibold text-lg">No commands yet</h3>

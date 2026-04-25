@@ -30,7 +30,7 @@ const PageHeader = ({
   const isHome = location.pathname === "/";
 
   return (
-    <header className="sticky top-0 z-20 flex h-16 w-full items-center justify-between md:justify-end lg:justify-between border-b bg-background px-6">
+    <header className="sticky top-0 z-20 flex h-14 w-full items-center justify-between md:justify-end lg:justify-between border-b bg-background px-3 sm:px-4 md:px-6">
       <SidebarTrigger className="md:hidden"></SidebarTrigger>
       <h1 className="text-lg hidden lg:block font-semibold">
         {isHome ? `Welcome back, ${fullName}!` : title}

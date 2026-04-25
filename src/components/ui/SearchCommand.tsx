@@ -102,11 +102,11 @@ const SearchCommand = ({ onClose }: { onClose: () => void }) => {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center pt-[13vh] px-4 bg-black/50 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-start justify-center pt-[8vh] sm:pt-[13vh] px-3 sm:px-4 bg-black/50 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-[540px] h-[480px] rounded-xl border border-border/60 bg-background shadow-xl overflow-hidden flex flex-col"
+        className="w-full max-w-[540px] h-[min(480px,85dvh)] rounded-xl border border-border/60 bg-background shadow-xl overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
       <Command shouldFilter={false} className="flex-1 flex flex-col overflow-hidden rounded-none border-none shadow-none bg-transparent">

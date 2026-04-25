@@ -184,24 +184,24 @@ const Dashboard = () => {
     <PageContainer className="flex flex-col gap-6 w-full xl:h-full xl:overflow-hidden">
 
       {/* Stats row + clock */}
-      <div className="flex items-center gap-4 shrink-0">
+      <div className="flex items-center gap-2 sm:gap-4 shrink-0">
         <div className="flex items-center w-fit rounded-lg border border-border bg-card divide-x divide-border overflow-hidden">
           {[
             { label: "Projects", value: totalProjects, icon: FolderKanban, color: "text-blue-500", onClick: () => navigate("/projects") },
-            { label: "Open Tasks", value: openTasks, icon: ListChecks, color: "text-amber-500", onClick: () => navigate("/tasks") },
+            { label: "Tasks", value: openTasks, icon: ListChecks, color: "text-amber-500", onClick: () => navigate("/tasks") },
             { label: "Notes", value: totalNotes, icon: FileText, color: "text-emerald-500", onClick: () => navigate("/notes") },
             { label: "Commands", value: totalCommands, icon: Terminal, color: "text-violet-500", onClick: () => navigate("/commands") },
           ].map(({ label, value, icon: Icon, color, onClick }) => (
             <div
               key={label}
               onClick={onClick}
-              className="flex items-center gap-2 px-4 py-2 cursor-pointer hover:bg-muted/40 transition-colors"
+              className="flex items-center gap-1.5 px-2 sm:px-4 py-2 cursor-pointer hover:bg-muted/40 transition-colors"
             >
               <Icon className={`h-3.5 w-3.5 shrink-0 ${color}`} />
               <span className="text-sm font-semibold">
                 {value === null ? <span className="text-muted-foreground/40">—</span> : value}
               </span>
-              <span className="text-sm text-muted-foreground">{label}</span>
+              <span className="hidden sm:inline text-sm text-muted-foreground">{label}</span>
             </div>
           ))}
         </div>
@@ -209,10 +209,10 @@ const Dashboard = () => {
         {/* Clock */}
         <div className="ml-auto flex flex-col items-end gap-0.5">
           <div className="flex items-baseline gap-1 tabular-nums">
-            <span className="text-2xl font-bold tracking-tight leading-none">
+            <span className="text-xl sm:text-2xl font-bold tracking-tight leading-none">
               {now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
             </span>
-            <span className="text-sm font-medium text-muted-foreground leading-none">
+            <span className="hidden sm:inline text-sm font-medium text-muted-foreground leading-none">
               {now.toLocaleTimeString("en-GB", { second: "2-digit" })}
             </span>
           </div>
@@ -222,11 +222,11 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-rows-[1fr] xl:grid-cols-3 gap-10 w-full flex-1 min-h-0">
-        <div className="xl:col-span-2 flex flex-col gap-6 xl:h-full xl:min-h-0">
+      <div className="grid grid-cols-1 xl:grid-rows-[1fr] xl:grid-cols-3 gap-4 md:gap-6 xl:gap-10 w-full flex-1 min-h-0">
+        <div className="xl:col-span-2 flex flex-col gap-4 md:gap-6 xl:h-full xl:min-h-0">
 
           {/* Latest projects */}
-          <div className="shrink-0 md:flex hidden flex-col gap-2">
+          <div className="shrink-0 flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-muted-foreground">Latest projects</span>
               <Button variant="link" size="sm" className="p-0 h-auto text-xs" onClick={() => navigate("/projects")}>
@@ -234,7 +234,7 @@ const Dashboard = () => {
               </Button>
             </div>
             {previewProjects.length > 0 ? (
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                 {previewProjects.slice(0, 3).map((project) => (
                   <div
                     key={project.id}
@@ -293,7 +293,7 @@ const Dashboard = () => {
           </div>
 
           {/* GitHub Activity + Quick Notes */}
-          <div className="flex flex-row flex-wrap gap-6 w-full xl:flex-1 xl:min-h-0">
+          <div className="flex flex-row flex-wrap gap-4 md:gap-6 w-full xl:flex-1 xl:min-h-0">
             <Card className="flex-2 w-full sm:min-w-64 flex flex-col min-h-32 xl:h-full xl:min-h-0">
               <CardHeader className="pb-1 shrink-0">
                 <CardTitle className="text-base md:text-lg">GitHub Activity</CardTitle>
