@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import PriorityBadge from "@/components/ui/PriorityBadge";
-import { Loader2, Trash2, Calendar, User, Tag, AlertCircle, Eye, Pencil } from "lucide-react";
+import { Loader2, Trash2, Calendar, User, Tag, AlertCircle, Pencil } from "lucide-react";
 import { updateTask, deleteTask } from "@/services/taskService";
 import type { TaskType } from "@/types/taskType";
 import type { Priority, Status } from "@/types/PriorityAndStatusType";
