@@ -15,6 +15,8 @@ import Settings from "@/pages/Settings/Settings";
 import Login from "@/pages/Authentication/Login";
 import Register from "@/pages/Authentication/Register";
 import VerifyEmail from "@/pages/Authentication/VerifyEmail";
+import ForgotPassword from "@/pages/Authentication/ForgotPassword";
+import ResetPassword from "@/pages/Authentication/ResetPassword";
 import NotFound from "@/pages/NotFound/NotFound";
 import ProjectDetails from "@/pages/ProjectDetails/ProjectDetails";
 import { projectDetailsLoader } from "@/pages/ProjectDetails/projectDetailsUtils";
@@ -35,6 +37,8 @@ const router = createBrowserRouter([
       { path: "login", element: <Login /> },
       { path: "register", element: <Register /> },
       { path: "verify-email", element: <VerifyEmail /> },
+      { path: "forgot-password", element: <ForgotPassword /> },
+      { path: "reset-password", element: <ResetPassword /> },
     ],
   },
   {
