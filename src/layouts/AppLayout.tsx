@@ -16,6 +16,9 @@ type CurrentMatch<TData = unknown> = {
 
 const AppLayout = () => {
   const [onCreate, setOnCreate] = useState<(() => void) | undefined>();
+  const [onCreateProject, setOnCreateProject] = useState<(() => void) | undefined>();
+  const [onCreateNote, setOnCreateNote] = useState<(() => void) | undefined>();
+  const [onCreateCommand, setOnCreateCommand] = useState<(() => void) | undefined>();
   const navigate = useNavigate();
 
   const matches = useMatches() as CurrentMatch<{
@@ -23,7 +26,9 @@ const AppLayout = () => {
   }>[];
   const current = matches[matches.length - 1];
   const headerActions = getHeaderActions({
-    onCreateProject: () => onCreate?.(),
+    onCreateProject: () => onCreateProject?.() ?? onCreate?.(),
+    onCreateNote: () => onCreateNote?.(),
+    onCreateCommand: () => onCreateCommand?.(),
     onNavigate: (path) => navigate(path),
   });
 
@@ -60,7 +65,7 @@ const AppLayout = () => {
         </aside>
 
         <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-          <HeaderActionsProvider value={{ setOnCreate }}>
+          <HeaderActionsProvider value={{ setOnCreate, setOnCreateProject, setOnCreateNote, setOnCreateCommand }}>
             <PageHeader
               title={title}
               showSearch={handle?.header?.showSearch}
