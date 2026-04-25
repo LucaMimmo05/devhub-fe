@@ -23,13 +23,25 @@ const ResetPassword = () => {
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
 
-  const handleVerifyOtp = (e: React.FormEvent) => {
+  const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (otp.length < 6) {
       toast.error("Enter the 6-digit code.");
       return;
     }
-    setStep("password");
+    setLoading(true);
+    try {
+      await axios.post(`${API_URL}/auth/verify-reset-otp`, { email, otp });
+      setStep("password");
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        "Invalid or expired code.";
+      toast.error(msg);
+      setOtp("");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleResetPassword = async (e: React.FormEvent) => {
@@ -106,7 +118,8 @@ const ResetPassword = () => {
                   autoFocus
                 />
               </div>
-              <Button type="submit" disabled={otp.length < 6}>
+              <Button type="submit" disabled={loading || otp.length < 6}>
+                {loading && <Loader2 className="animate-spin h-4 w-4 mr-2" />}
                 Continue
               </Button>
             </form>
