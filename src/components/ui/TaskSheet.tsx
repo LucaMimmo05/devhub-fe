@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import {
   Sheet,
   SheetContent,
@@ -77,8 +78,9 @@ const TaskSheet = ({ task, onClose, onSaved, onDeleted, members, canAssign, canE
       });
       onSaved(updated);
       onClose();
-    } catch (err) {
-      console.error("Failed to update task:", err);
+      toast.success("Task updated!");
+    } catch {
+      toast.error("Failed to update task.");
     } finally {
       setSaving(false);
     }
@@ -91,8 +93,9 @@ const TaskSheet = ({ task, onClose, onSaved, onDeleted, members, canAssign, canE
       await deleteTask(task.id);
       onDeleted?.(task.id);
       onClose();
-    } catch (err) {
-      console.error("Failed to delete task:", err);
+      toast.success("Task deleted.");
+    } catch {
+      toast.error("Failed to delete task.");
     } finally {
       setDeleting(false);
     }

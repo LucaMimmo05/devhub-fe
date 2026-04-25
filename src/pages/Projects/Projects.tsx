@@ -26,6 +26,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+import { toast } from "sonner";
 
 import type { Priority, Status } from "@/types/PriorityAndStatusType";
 
@@ -46,15 +47,14 @@ const Projects = () => {
   const [priority, setPriority] = useState<Priority>("LOW");
   const [status, setStatus] = useState<Status>("PENDING");
   const [dueDate, setDueDate] = useState<Date | null>(null);
-  const [createError, setCreateError] = useState("");
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
-    getUserProject().then(setProjects).catch(console.error);
+    getUserProject().then(setProjects).catch(() => toast.error("Failed to load projects."));
   }, []);
 
   useEffect(() => {
-    setOnCreate?.(() => () => setOpenModal(true));
+    setOnCreate?.(() => setOpenModal(true));
     return () => setOnCreate?.(undefined);
   }, [setOnCreate]);
 
@@ -65,13 +65,11 @@ const Projects = () => {
     setPriority("LOW");
     setStatus("PENDING");
     setDueDate(null);
-    setCreateError("");
     setCreating(false);
   };
 
   const handleCreate = async () => {
     if (!title.trim() || !user?.id) return;
-    setCreateError("");
     setCreating(true);
 
     const newProject: ProjectRequest = {
@@ -88,39 +86,69 @@ const Projects = () => {
     try {
       const created = await createProject(newProject);
       setProjects((prev) => [...prev, created]);
+      toast.success("Project created successfully!");
       handleClose();
     } catch (err: unknown) {
-      console.error("Error creating project:", err);
       const msg =
         (err as { response?: { data?: { message?: string; title?: string } } })
           ?.response?.data?.message ??
         (err as { response?: { data?: { message?: string; title?: string } } })
           ?.response?.data?.title ??
         "Failed to create project. Please try again.";
-      setCreateError(msg);
+      toast.error(msg);
     } finally {
       setCreating(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    await deleteProject(id);
-    setProjects((prev) => prev.filter((p) => p.id !== id));
+    try {
+      await deleteProject(id);
+      setProjects((prev) => prev.filter((p) => p.id !== id));
+      toast.success("Project deleted.");
+    } catch {
+      toast.error("Failed to delete project.");
+    }
   };
 
   const handleArchive = async (id: string) => {
     const project = projects.find((p) => p.id === id);
     if (!project) return;
-    const updated = await updateProject(id, {
-      title: project.title,
-      description: project.description,
-      imageUrl: project.imageUrl,
-      priority: project.priority,
-      status: "ARCHIVED",
-      dueDate: project.dueDate,
-      ownerId: project.ownerId,
-    });
-    setProjects((prev) => prev.map((p) => (p.id === id ? updated : p)));
+    try {
+      const updated = await updateProject(id, {
+        title: project.title,
+        description: project.description,
+        imageUrl: project.imageUrl,
+        priority: project.priority,
+        status: "ARCHIVED",
+        dueDate: project.dueDate,
+        ownerId: project.ownerId,
+      });
+      setProjects((prev) => prev.map((p) => (p.id === id ? updated : p)));
+      toast.success("Project archived.");
+    } catch {
+      toast.error("Failed to archive project.");
+    }
+  };
+
+  const handleUnarchive = async (id: string) => {
+    const project = projects.find((p) => p.id === id);
+    if (!project) return;
+    try {
+      const updated = await updateProject(id, {
+        title: project.title,
+        description: project.description,
+        imageUrl: project.imageUrl,
+        priority: project.priority,
+        status: "PENDING",
+        dueDate: project.dueDate,
+        ownerId: project.ownerId,
+      });
+      setProjects((prev) => prev.map((p) => (p.id === id ? updated : p)));
+      toast.success("Project unarchived.");
+    } catch {
+      toast.error("Failed to unarchive project.");
+    }
   };
 
   const displayed = projects.filter((p) =>
@@ -155,6 +183,7 @@ const Projects = () => {
               project={project}
               onDelete={handleDelete}
               onArchive={handleArchive}
+              onUnarchive={handleUnarchive}
             />
           ))}
         </div>
@@ -171,17 +200,12 @@ const Projects = () => {
         description="Fill in the details below to create a new project."
         className="max-w-4xl w-full"
         footer={
-          <div className="flex items-center justify-between w-full gap-2">
-            {createError && (
-              <p className="text-sm text-destructive flex-1">{createError}</p>
-            )}
-            <div className="flex gap-2 ml-auto">
-              <Button variant="outline" onClick={handleClose} disabled={creating}>Cancel</Button>
-              <Button onClick={handleCreate} disabled={creating || !title.trim()}>
-                {creating && <Loader2 className="animate-spin h-4 w-4 mr-1" />}
-                Create
-              </Button>
-            </div>
+          <div className="flex gap-2 ml-auto">
+            <Button variant="outline" onClick={handleClose} disabled={creating}>Cancel</Button>
+            <Button onClick={handleCreate} disabled={creating || !title.trim()}>
+              {creating && <Loader2 className="animate-spin h-4 w-4 mr-1" />}
+              Create
+            </Button>
           </div>
         }
       >

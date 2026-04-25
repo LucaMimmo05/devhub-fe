@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/sheet";
 import { Check, Copy, Loader2, Plus, Search, Terminal, Trash2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 const NEW_CATEGORY_VALUE = "__new__";
 
@@ -75,7 +76,7 @@ const Commands = () => {
       search || undefined
     )
       .then(setCommands)
-      .catch(console.error)
+      .catch(() => toast.error("Failed to load commands."))
       .finally(() => setLoading(false));
   };
 
@@ -84,7 +85,7 @@ const Commands = () => {
   }, []);
 
   useEffect(() => {
-    setOnCreate?.(() => () => openCreate());
+    setOnCreate?.(() => openCreate());
     return () => setOnCreate?.(undefined);
   }, [setOnCreate]);
 
@@ -147,13 +148,15 @@ const Commands = () => {
       if (isNew) {
         const created = await createCommand(payload);
         setCommands((prev) => [created, ...prev]);
+        toast.success("Command created!");
       } else if (editingCmd) {
         const updated = await updateCommand(editingCmd.id, payload);
         setCommands((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+        toast.success("Command updated!");
       }
       setOpenSheet(false);
-    } catch (err) {
-      console.error(err);
+    } catch {
+      toast.error("Failed to save command.");
     } finally {
       setSaving(false);
     }
@@ -165,8 +168,9 @@ const Commands = () => {
       await deleteCommand(editingCmd.id);
       setCommands((prev) => prev.filter((c) => c.id !== editingCmd.id));
       setOpenSheet(false);
-    } catch (err) {
-      console.error(err);
+      toast.success("Command deleted.");
+    } catch {
+      toast.error("Failed to delete command.");
     }
   };
 

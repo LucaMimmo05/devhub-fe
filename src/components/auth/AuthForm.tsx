@@ -56,7 +56,7 @@ export const AuthForm = ({
           {showForgotPassword && (
             <p className="text-center text-xs text-muted-foreground">
               <Link
-                to="/forgot-password"
+                to="/auth/forgot-password"
                 className="hover:text-primary hover:underline"
               >
                 Forgot password?

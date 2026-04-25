@@ -1,10 +1,11 @@
-export const timeSince = (dateString: string) => {
+export const timeSince = (dateString: string | null | undefined) => {
+  if (!dateString) return "just now";
   const date = new Date(dateString);
   const now = new Date();
 
   const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
-  if (isNaN(date.getTime())) return "";
+  if (isNaN(date.getTime()) || seconds < 0) return "just now";
 
   const minute = 60;
   const hour = 60 * minute;

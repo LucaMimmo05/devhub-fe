@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { getMyTasks } from "@/services/taskService";
 import type { TaskType } from "@/types/taskType";
 import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner";
 
 const STATUS_OPTIONS = [
   { label: "Pending", value: "PENDING" },
@@ -51,7 +52,7 @@ const Tasks = () => {
     currentFilters.current = { status, priority, search: search ?? "" };
     getMyTasks({ status, priority, search: search || undefined })
       .then(setTasks)
-      .catch(console.error)
+      .catch(() => toast.error("Failed to load tasks."))
       .finally(() => setLoading(false));
   };
 

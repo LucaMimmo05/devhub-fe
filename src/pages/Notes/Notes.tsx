@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/input";
 import { useHeaderActions } from "@/context/HeaderActionsContext";
 import { cn } from "@/lib/utils";
 import { createNote, deleteNote, getMyNotes, updateNote } from "@/services/noteService";
+import { toast } from "sonner";
 import type { NoteType } from "@/types/noteType";
 import { timeSince } from "@/utils/getRelativeTime";
 import { ArrowLeft, Eye, EyeOff, Loader2, Plus, Search, StickyNote, Trash2 } from "lucide-react";
@@ -63,12 +64,12 @@ const Notes = () => {
         const match = loaded.find((n) => n.id === targetId);
         if (match) selectNote(match);
       }
-    }).catch(console.error);
+    }).catch(() => toast.error("Failed to load notes."));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    setOnCreate?.(() => () => handleCreateNote());
+    setOnCreate?.(() => handleCreateNote());
     return () => setOnCreate?.(undefined);
   }, [setOnCreate]);
 
@@ -92,8 +93,8 @@ const Notes = () => {
       const created = await createNote({ title: "Untitled", content: "" });
       setNotes((prev) => [created, ...prev]);
       selectNote(created);
-    } catch (err) {
-      console.error("Failed to create note:", err);
+    } catch {
+      toast.error("Failed to create note.");
     } finally {
       setCreating(false);
     }
@@ -110,8 +111,8 @@ const Notes = () => {
       setIsDirty(false);
       setSaveStatus("saved");
       setTimeout(() => setSaveStatus("idle"), 2000);
-    } catch (err) {
-      console.error("Failed to save note:", err);
+    } catch {
+      toast.error("Failed to save note.");
       setSaveStatus("idle");
     } finally {
       setSaving(false);
@@ -147,8 +148,9 @@ const Notes = () => {
         setShowEditor(false);
       }
       setConfirmDelete(false);
-    } catch (err) {
-      console.error("Failed to delete note:", err);
+      toast.success("Note deleted.");
+    } catch {
+      toast.error("Failed to delete note.");
     }
   };
 
@@ -160,7 +162,7 @@ const Notes = () => {
         "flex flex-col border-r w-64 shrink-0 h-full",
         showEditor ? "hidden lg:flex" : "flex w-full lg:w-64"
       )}>
-        <div className="flex items-center gap-2 px-3 py-3 border-b">
+        <div className="flex items-center gap-2 px-3 border-b h-14">
           <div className="relative flex-1">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <Input
@@ -226,7 +228,7 @@ const Notes = () => {
         ) : (
           <>
             {/* Toolbar */}
-            <div className="flex items-center gap-2 px-4 py-2 border-b shrink-0">
+            <div className="flex items-center gap-2 px-3 border-b shrink-0 h-14">
               <Button size="icon" variant="ghost" className="h-7 w-7 lg:hidden" onClick={() => setShowEditor(false)}>
                 <ArrowLeft className="h-4 w-4" />
               </Button>
@@ -239,7 +241,7 @@ const Notes = () => {
                   scheduleAutoSave(v, content);
                 }}
                 placeholder="Note title"
-                className="border-0 shadow-none text-base font-semibold px-0 h-8 focus-visible:ring-0 flex-1"
+                className="border-0 shadow-none text-sm font-semibold px-0 h-8 focus-visible:ring-0 flex-1"
               />
               <div className="flex items-center gap-1.5 shrink-0">
                 {saving && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
@@ -277,25 +279,36 @@ const Notes = () => {
 
             {/* Content area */}
             {showPreview ? (
-              /* Split: write top, live preview bottom */
-              <div className="flex flex-col flex-1 min-h-0">
-                <textarea
-                  ref={textareaRef}
-                  value={content}
-                  onChange={(e) => { const v = e.target.value; setContent(v); setIsDirty(true); scheduleAutoSave(title, v); }}
-                  placeholder={"Start writing..."}
-                  className="w-full resize-none p-6 font-mono text-sm bg-transparent focus:outline-none leading-relaxed border-b"
-                  style={{ height: "50%", minHeight: 0 }}
-                  spellCheck={false}
-                />
-                <div className="overflow-y-auto p-6" style={{ height: "50%" }}>
-                  {content.trim() ? (
-                    <div className={proseClass}>
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground italic">Nothing to preview.</p>
-                  )}
+              /* Split: editor left, preview right */
+              <div className="flex flex-row flex-1 min-h-0 min-w-0">
+                {/* Editor */}
+                <div className="w-1/2 flex flex-col min-h-0 border-r">
+                  <div className="px-4 py-1.5 border-b bg-muted/30 shrink-0">
+                    <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Editor</span>
+                  </div>
+                  <textarea
+                    ref={textareaRef}
+                    value={content}
+                    onChange={(e) => { const v = e.target.value; setContent(v); setIsDirty(true); scheduleAutoSave(title, v); }}
+                    placeholder="Start writing..."
+                    className="flex-1 resize-none p-5 font-mono text-sm bg-transparent focus:outline-none leading-relaxed min-h-0"
+                    spellCheck={false}
+                  />
+                </div>
+                {/* Preview */}
+                <div className="w-1/2 flex flex-col min-h-0">
+                  <div className="px-4 py-1.5 border-b bg-muted/30 shrink-0">
+                    <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Preview</span>
+                  </div>
+                  <div className="flex-1 overflow-y-auto p-5">
+                    {content.trim() ? (
+                      <div className={proseClass}>
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground italic">Nothing to preview.</p>
+                    )}
+                  </div>
                 </div>
               </div>
             ) : (
