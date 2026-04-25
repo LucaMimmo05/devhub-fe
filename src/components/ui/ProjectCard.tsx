@@ -1,5 +1,19 @@
 import type { ProjectType } from "@/types/projectType";
+import type { Priority, Status } from "@/types/PriorityAndStatusType";
 import { ArrowRight, Calendar, Ellipsis, Loader2 } from "lucide-react";
+
+const priorityLabel: Record<Priority, string> = {
+  LOW: "Low",
+  MEDIUM: "Medium",
+  HIGH: "High",
+};
+
+const statusLabel: Record<Status, string> = {
+  PENDING: "Pending",
+  IN_PROGRESS: "In Progress",
+  COMPLETED: "Completed",
+  ARCHIVED: "Archived",
+};
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "./badge";
@@ -35,9 +49,10 @@ export type ProjectProps = {
   project: ProjectType;
   onDelete?: (id: string) => void;
   onArchive?: (id: string) => void;
+  onUnarchive?: (id: string) => void;
 };
 
-const ProjectCard = ({ project, onDelete, onArchive }: ProjectProps) => {
+const ProjectCard = ({ project, onDelete, onArchive, onUnarchive }: ProjectProps) => {
   const navigate = useNavigate();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -57,6 +72,15 @@ const ProjectCard = ({ project, onDelete, onArchive }: ProjectProps) => {
     setArchiving(true);
     try {
       await onArchive?.(project.id);
+    } finally {
+      setArchiving(false);
+    }
+  };
+
+  const handleUnarchive = async () => {
+    setArchiving(true);
+    try {
+      await onUnarchive?.(project.id);
     } finally {
       setArchiving(false);
     }
@@ -108,10 +132,15 @@ const ProjectCard = ({ project, onDelete, onArchive }: ProjectProps) => {
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
               <DropdownMenuGroup>
-                {!isArchived && (
+                {!isArchived ? (
                   <DropdownMenuItem onClick={handleArchive} disabled={archiving}>
                     {archiving && <Loader2 className="animate-spin h-4 w-4 mr-2" />}
                     Archive Project
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem onClick={handleUnarchive} disabled={archiving}>
+                    {archiving && <Loader2 className="animate-spin h-4 w-4 mr-2" />}
+                    Unarchive Project
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuItem
@@ -126,8 +155,8 @@ const ProjectCard = ({ project, onDelete, onArchive }: ProjectProps) => {
         </CardHeader>
 
         <CardContent className="space-x-3 pb-2">
-          <PriorityBadge data={project.priority}>{project.priority}</PriorityBadge>
-          <PriorityBadge data={project.status}>{project.status}</PriorityBadge>
+          <PriorityBadge data={project.priority}>{priorityLabel[project.priority] ?? project.priority}</PriorityBadge>
+          <PriorityBadge data={project.status}>{statusLabel[project.status] ?? project.status}</PriorityBadge>
         </CardContent>
 
         <CardFooter className="flex-col">
