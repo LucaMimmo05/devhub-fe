@@ -1,4 +1,4 @@
-import { Outlet, useMatches } from "react-router-dom";
+import { Outlet, useMatches, useNavigate } from "react-router-dom";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import AppSidebar from "./AppSidebar";
 import PageHeader from "./PageHeader";
@@ -16,6 +16,7 @@ type CurrentMatch<TData = unknown> = {
 
 const AppLayout = () => {
   const [onCreate, setOnCreate] = useState<(() => void) | undefined>();
+  const navigate = useNavigate();
 
   const matches = useMatches() as CurrentMatch<{
     project?: { name: string };
@@ -23,6 +24,7 @@ const AppLayout = () => {
   const current = matches[matches.length - 1];
   const headerActions = getHeaderActions({
     onCreateProject: () => onCreate?.(),
+    onNavigate: (path) => navigate(path),
   });
 
   const handle = current?.handle as RouteHandle | undefined;

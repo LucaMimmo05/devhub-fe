@@ -5,7 +5,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenu,
 } from "@/components/ui/dropdown-menu";
-import { Plus, RefreshCw, ChevronDown, Trash2, Edit } from "lucide-react";
+import { Plus, RefreshCw, ChevronDown, Trash2, Edit, FolderGit2, CheckSquare, FileText, Terminal } from "lucide-react";
 
 interface HeaderActionsHandlers {
   onCreateProject?: () => void;
@@ -13,8 +13,8 @@ interface HeaderActionsHandlers {
   onSync?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
+  onNavigate?: (path: string) => void;
 }
-
 
 export const getHeaderActions = (
   handlers: HeaderActionsHandlers
@@ -27,15 +27,23 @@ export const getHeaderActions = (
         </Button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent>
-        <DropdownMenuItem onClick={() => handlers.onCreateProject?.()}>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={() => handlers.onNavigate?.("/projects")}>
+          <FolderGit2 className="mr-2 h-4 w-4" />
           Project
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handlers.onCreateTask?.()}>
+        <DropdownMenuItem onClick={() => handlers.onNavigate?.("/tasks")}>
+          <CheckSquare className="mr-2 h-4 w-4" />
           Task
         </DropdownMenuItem>
-        <DropdownMenuItem>Command</DropdownMenuItem>
-        <DropdownMenuItem>Note</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handlers.onNavigate?.("/notes")}>
+          <FileText className="mr-2 h-4 w-4" />
+          Note
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handlers.onNavigate?.("/commands")}>
+          <Terminal className="mr-2 h-4 w-4" />
+          Command
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   ),
@@ -64,4 +72,3 @@ export const getHeaderActions = (
     </Button>
   ),
 });
-
