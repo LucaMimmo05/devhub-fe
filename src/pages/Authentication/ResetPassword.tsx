@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, ArrowLeft, ShieldCheck, KeyRound, Mail } from "lucide-react";
+import { Loader2, ArrowLeft, ShieldCheck, Mail } from "lucide-react";
 import axios from "axios";
 import { API_URL } from "@/services";
 
