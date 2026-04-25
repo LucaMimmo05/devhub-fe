@@ -188,7 +188,7 @@ const Projects = () => {
           ))}
         </div>
       ) : (
-        <div className="relative w-full h-[calc(100vh-260px)] flex justify-center items-center">
+        <div className="relative w-full min-h-48 flex-1 flex justify-center items-center">
           <NoData resource={activeTab === "Archived" ? "Archived Projects" : "Projects"} />
         </div>
       )}
@@ -198,7 +198,7 @@ const Projects = () => {
         onOpenChange={handleClose}
         title="Create new Project"
         description="Fill in the details below to create a new project."
-        className="max-w-4xl w-full"
+        className="w-full max-w-lg sm:max-w-2xl md:max-w-4xl"
         footer={
           <div className="flex gap-2 ml-auto">
             <Button variant="outline" onClick={handleClose} disabled={creating}>Cancel</Button>
@@ -209,7 +209,7 @@ const Projects = () => {
           </div>
         }
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-h-[70vh] overflow-y-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 max-h-[60vh] sm:max-h-[70vh] overflow-y-auto">
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
               <Label htmlFor="title">Title</Label>

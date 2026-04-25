@@ -83,7 +83,7 @@ const AppLayout = () => {
               <Outlet />
             </div>
 
-            <footer className="shrink-0 border-t border-border/40 px-6 py-1.5 flex items-center justify-end gap-1.5">
+            <footer className="shrink-0 border-t border-border/40 px-3 sm:px-6 py-1.5 flex items-center justify-end gap-1.5">
               <span className="text-[11px] text-muted-foreground/35 tracking-wide uppercase font-medium">
                 Crafted by
               </span>

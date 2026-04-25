@@ -66,7 +66,7 @@ const TaskTable = ({
   }
 
   return (
-    <div className={cn("rounded-md", hasBorder && "border border-border")}>
+    <div className={cn("rounded-md overflow-x-auto", hasBorder && "border border-border")}>
       <Table className="min-w-[540px]">
         <colgroup>
           {(hasCheckbok || onGoToProject) && <col style={{ width: "44px" }} />}
