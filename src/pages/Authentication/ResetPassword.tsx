@@ -157,6 +157,9 @@ const ResetPassword = () => {
                   onChange={(e) => setNewPassword(e.target.value)}
                   autoFocus
                 />
+                {newPassword.length > 0 && newPassword.length < 6 && (
+                  <p className="text-xs text-destructive">Password must be at least 6 characters.</p>
+                )}
               </div>
               <div className="flex flex-col gap-2">
                 <Label htmlFor="confirmPassword">Confirm password</Label>
@@ -166,9 +169,26 @@ const ResetPassword = () => {
                   placeholder="Repeat your password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
+                  className={
+                    confirmPassword.length > 0 && confirmPassword !== newPassword
+                      ? "border-destructive focus-visible:ring-destructive"
+                      : ""
+                  }
                 />
+                {confirmPassword.length > 0 && confirmPassword !== newPassword && (
+                  <p className="text-xs text-destructive">Passwords do not match.</p>
+                )}
               </div>
-              <Button type="submit" disabled={loading || !newPassword || !confirmPassword}>
+              <Button
+                type="submit"
+                disabled={
+                  loading ||
+                  !newPassword ||
+                  !confirmPassword ||
+                  newPassword.length < 6 ||
+                  newPassword !== confirmPassword
+                }
+              >
                 {loading && <Loader2 className="animate-spin h-4 w-4 mr-2" />}
                 Reset password
               </Button>

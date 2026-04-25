@@ -20,10 +20,13 @@ const ForgotPassword = () => {
     setLoading(true);
     try {
       await axios.post(`${API_URL}/auth/forgot-password`, { email });
-      toast.success("If that email exists, a reset code has been sent.");
+      toast.success("Reset code sent! Check your inbox.");
       navigate("/auth/reset-password", { state: { email } });
-    } catch {
-      toast.error("Something went wrong. Please try again.");
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        "Something went wrong. Please try again.";
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
