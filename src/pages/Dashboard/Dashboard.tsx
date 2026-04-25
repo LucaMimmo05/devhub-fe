@@ -20,7 +20,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import Modal from "@/components/ui/Modal";
-import { ArrowRight, Plus, FolderGit2, Loader2, Calendar, AlertCircle } from "lucide-react";
+import { ArrowRight, Plus, FolderGit2, Loader2 } from "lucide-react";
 import Task from "@/components/ui/Task";
 import QuickNote from "@/components/ui/QuickNote";
 import GithubActivity from "@/components/ui/GithubActivity";
@@ -40,21 +40,11 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useHeaderActions } from "@/context/HeaderActionsContext";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
-
 const statusLabel: Record<string, string> = {
   PENDING: "Pending",
   IN_PROGRESS: "In Progress",
   COMPLETED: "Completed",
   ARCHIVED: "Archived",
-};
-
-const isOverdue = (dueDate?: string) =>
-  !!dueDate && new Date(dueDate) < new Date();
-
-const formatDate = (d?: string) => {
-  if (!d) return null;
-  return new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
 };
 
 const Dashboard = () => {
@@ -65,7 +55,6 @@ const Dashboard = () => {
   const [previewProjects, setPreviewProjects] = useState<ProjectType[]>([]);
   const [recentTasks, setRecentTasks] = useState<TaskType[]>([]);
   const [recentNotes, setRecentNotes] = useState<NoteType[]>([]);
-  const [dueSoonTasks, setDueSoonTasks] = useState<TaskType[]>([]);
 
   // Project modal
   const [openProject, setOpenProject] = useState(false);
@@ -94,11 +83,6 @@ const Dashboard = () => {
     getUserProject(3).then(setPreviewProjects).catch(console.error);
     getMyTasks().then((tasks) => {
       setRecentTasks(tasks.slice(0, 5));
-      const withDue = tasks
-        .filter((t: TaskType) => t.dueDate && t.status !== "COMPLETED")
-        .sort((a: TaskType, b: TaskType) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime())
-        .slice(0, 4);
-      setDueSoonTasks(withDue);
     }).catch(console.error);
     getMyNotes().then((notes) => setRecentNotes(notes.slice(0, 3))).catch(console.error);
   }, []);
@@ -175,87 +159,37 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 xl:grid-rows-[1fr] xl:grid-cols-3 gap-10 w-full flex-1 min-h-0">
         <div className="xl:col-span-2 flex flex-col gap-6 xl:h-full xl:min-h-0">
 
-          {/* Due soon */}
-          <Card className="shrink-0">
-            <CardHeader className="pb-1">
-              <CardTitle className="text-base">Upcoming deadlines</CardTitle>
-              <Separator />
-            </CardHeader>
-            <CardContent className="px-4 py-0 pt-1 pb-3">
-              {dueSoonTasks.length > 0 ? (
-                <div className="flex flex-col">
-                  {dueSoonTasks.map((task) => {
-                    const overdue = isOverdue(task.dueDate);
-                    return (
-                      <div
-                        key={task.id}
-                        className="flex items-center gap-3 py-2 border-b border-border/50 last:border-0"
-                      >
-                        {overdue
-                          ? <AlertCircle className="h-3.5 w-3.5 shrink-0 text-destructive" />
-                          : <Calendar className="h-3.5 w-3.5 shrink-0 text-muted-foreground/50" />
-                        }
-                        <p className="text-sm font-medium flex-1 truncate">{task.title}</p>
-                        <span className={cn(
-                          "text-xs shrink-0",
-                          overdue ? "text-destructive font-medium" : "text-muted-foreground"
-                        )}>
-                          {overdue ? "Overdue · " : ""}{formatDate(task.dueDate)}
-                        </span>
-                        <PriorityBadge data={task.priority} className="text-[10px] px-1.5 py-0.5 shrink-0">
-                          {task.priority.charAt(0) + task.priority.slice(1).toLowerCase()}
-                        </PriorityBadge>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground py-3">No upcoming deadlines</p>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Latest projects — compact list */}
-          <div className="shrink-0 md:flex hidden flex-col gap-3">
+          {/* Latest projects — mini cards in a row */}
+          <div className="shrink-0 md:flex hidden flex-col gap-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base">Latest projects</CardTitle>
+              <span className="text-sm font-medium text-muted-foreground">Latest projects</span>
               <Button variant="link" size="sm" className="p-0 h-auto text-xs" onClick={() => navigate("/projects")}>
                 View all <ArrowRight className="ml-1" size={12} />
               </Button>
             </div>
             {previewProjects.length > 0 ? (
-              <Card>
-                <CardContent className="px-4 py-0">
-                  {previewProjects.slice(0, 3).map((project) => (
-                    <div
-                      key={project.id}
-                      className="flex items-center gap-3 py-2.5 border-b border-border/50 last:border-0 cursor-pointer hover:bg-muted/20 -mx-4 px-4 transition-colors"
-                      onClick={() => navigate(`/projects/${project.id}`)}
-                    >
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{project.title}</p>
-                        {project.description && (
-                          <p className="text-xs text-muted-foreground truncate">{project.description}</p>
-                        )}
-                      </div>
-                      <PriorityBadge data={project.status} className="text-[10px] px-1.5 py-0.5 shrink-0">
-                        {statusLabel[project.status] ?? project.status}
-                      </PriorityBadge>
-                      <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
+              <div className="flex gap-2">
+                {previewProjects.slice(0, 3).map((project) => (
+                  <div
+                    key={project.id}
+                    className="flex-1 flex items-center justify-between gap-2 rounded-lg border border-border bg-card px-3 py-2 cursor-pointer hover:bg-muted/40 transition-colors min-w-0"
+                    onClick={() => navigate(`/projects/${project.id}`)}
+                  >
+                    <span className="text-sm font-medium truncate">{project.title}</span>
+                    <PriorityBadge data={project.status} className="text-[10px] px-1.5 py-0.5 shrink-0">
+                      {statusLabel[project.status] ?? project.status}
+                    </PriorityBadge>
+                  </div>
+                ))}
+              </div>
             ) : (
-              <Card className="flex flex-col items-center justify-center p-6 border-dashed shadow-none bg-muted/10 h-24">
-                <div className="flex items-center gap-2 text-center">
-                  <FolderGit2 className="h-4 w-4 text-muted-foreground/50" />
-                  <span className="text-sm text-muted-foreground">No projects yet</span>
-                  <Button size="sm" variant="outline" asChild className="ml-2">
-                    <Link to="/projects"><Plus className="mr-1 h-3 w-3" />Create</Link>
-                  </Button>
-                </div>
-              </Card>
+              <div className="flex items-center gap-2 rounded-lg border border-dashed border-border px-3 py-2">
+                <FolderGit2 className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
+                <span className="text-sm text-muted-foreground">No projects yet</span>
+                <Button size="sm" variant="outline" asChild className="ml-auto h-6 text-xs px-2">
+                  <Link to="/projects">Create</Link>
+                </Button>
+              </div>
             )}
           </div>
 
