@@ -24,6 +24,13 @@ const Login = () => {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
         "Invalid email or password.";
+
+      if (msg === "EMAIL_NOT_VERIFIED") {
+        toast.warning("Please verify your email before logging in.");
+        navigate("/auth/verify-email", { state: { email } });
+        return;
+      }
+
       toast.error(msg);
     }
   };
