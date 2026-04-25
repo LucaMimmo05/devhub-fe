@@ -1,8 +1,12 @@
 import { FileText } from "lucide-react";
 import type { NoteType } from "@/types/noteType";
 
-const formatDate = (d: string) =>
-  new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
+const formatDate = (d: string | null | undefined) => {
+  if (!d) return "just now";
+  const date = new Date(d);
+  if (isNaN(date.getTime()) || date.getFullYear() < 2000) return "just now";
+  return date.toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
+};
 
 const stripMarkdown = (text: string) =>
   text
