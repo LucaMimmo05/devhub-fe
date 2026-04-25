@@ -14,7 +14,6 @@ import { ArrowRight, Plus, FolderGit2 } from "lucide-react";
 import Task from "@/components/ui/Task";
 import QuickNote from "@/components/ui/QuickNote";
 import GithubActivity from "@/components/ui/GithubActivity";
-import { useAuth } from "@/context/AuthContext";
 import ProjectOverview from "@/components/ui/ProjectOverview";
 import { githubActivityMock } from "@/mock/dashboard-mock";
 import { useEffect, useState } from "react";
@@ -38,26 +37,13 @@ const Dashboard = () => {
     getMyNotes().then((notes) => setRecentNotes(notes.slice(0, 3))).catch(console.error);
   }, []);
 
-  const { user } = useAuth();
-
-  const pendingCount = recentTasks.filter((t) => t.status === "PENDING").length;
-
   return (
     <PageContainer className="flex flex-col gap-6 w-full xl:h-full xl:overflow-hidden">
       <div className="grid grid-cols-1 xl:grid-rows-[1fr] xl:grid-cols-3 gap-10 w-full flex-1 min-h-0">
         <div className="xl:col-span-2 flex flex-col gap-6 xl:h-full xl:min-h-0">
-          <Card className="bg-transparent p-0 border-none w-full md:w-2/3 flex flex-col justify-center shrink-0">
-            <CardHeader className="p-0">
-              <CardTitle className="text-3xl">Hi {user?.firstName}!</CardTitle>
-              <CardDescription className="max-w-md text-base">
-                {pendingCount > 0
-                  ? `You have ${pendingCount} pending task${pendingCount !== 1 ? "s" : ""}. Let's keep moving forward.`
-                  : "You're all caught up! Great work."}
-              </CardDescription>
-            </CardHeader>
-          </Card>
+         
 
-          <div className="shrink-0 md:flex hidden flex-col gap-4 xl:gap-2">
+          <div className="shrink-0 md:flex hidden flex-col gap-4 xl:gap-2 mt-2">
             <div className="flex gap-0.5 flex-col shrink-0">
               <CardTitle className="text-base md:text-lg xl:text-base">
                 Here's the latest projects

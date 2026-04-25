@@ -50,8 +50,8 @@ const ResetPassword = () => {
       toast.error("Passwords do not match.");
       return;
     }
-    if (newPassword.length < 6) {
-      toast.error("Password must be at least 6 characters.");
+    if (newPassword.length < 8) {
+      toast.error("Password must be at least 8 characters.");
       return;
     }
     setLoading(true);
@@ -165,13 +165,13 @@ const ResetPassword = () => {
                 <Input
                   id="newPassword"
                   type="password"
-                  placeholder="At least 6 characters"
+                  placeholder="At least 8 characters"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   autoFocus
                 />
-                {newPassword.length > 0 && newPassword.length < 6 && (
-                  <p className="text-xs text-destructive">Password must be at least 6 characters.</p>
+                {newPassword.length > 0 && newPassword.length < 8 && (
+                  <p className="text-xs text-destructive">Password must be at least 8 characters.</p>
                 )}
               </div>
               <div className="flex flex-col gap-2">
@@ -198,7 +198,7 @@ const ResetPassword = () => {
                   loading ||
                   !newPassword ||
                   !confirmPassword ||
-                  newPassword.length < 6 ||
+                  newPassword.length < 8 ||
                   newPassword !== confirmPassword
                 }
               >
