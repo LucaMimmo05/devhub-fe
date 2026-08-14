@@ -6,57 +6,72 @@ import { cn } from "@/lib/utils";
 
 type Props = {
   title: string;
-  description?: string;
   icon: ReactNode;
   iconClassName?: string;
-  step: number;
-  stepCount: number;
+  /** Omit (or leave at 1) for a single-screen flow with no step chrome, e.g. a document-style editor. */
+  step?: number;
+  stepCount?: number;
   onClose: () => void;
-  footer: ReactNode;
+  footer?: ReactNode;
   children: ReactNode;
-  /** Extra width for steps with denser content (e.g. metadata grids). */
+  /** Extra width for denser content. */
   wide?: boolean;
+  /** Center content in the viewport instead of top-aligning (used by one-question-per-step flows). */
+  centered?: boolean;
 };
 
 const WizardScreen = ({
   title,
-  description,
   icon,
   iconClassName = "bg-primary/10 text-primary",
-  step,
-  stepCount,
+  step = 0,
+  stepCount = 1,
   onClose,
   footer,
   children,
   wide = false,
+  centered = false,
 }: Props) => {
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-background">
-      <header className="flex shrink-0 items-center gap-3 border-b border-border px-6 py-4">
-        <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl", iconClassName)}>
+      <header className="flex shrink-0 items-center gap-3 px-6 py-4">
+        <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-lg", iconClassName)}>
           {icon}
         </div>
-        <div className="min-w-0 flex-1">
-          <h1 className="text-base font-semibold leading-tight">{title}</h1>
-          {description && <p className="text-sm text-muted-foreground mt-0.5">{description}</p>}
-        </div>
-        <StepDots step={step} count={stepCount} />
-        <Button variant="ghost" size="icon" className="shrink-0" onClick={onClose} aria-label="Close">
+        <h1 className="text-sm font-semibold leading-tight text-muted-foreground">{title}</h1>
+
+        {stepCount > 1 && (
+          <div className="ml-auto flex items-center gap-3">
+            <span className="text-xs font-medium tabular-nums text-muted-foreground">
+              {step + 1} / {stepCount}
+            </span>
+            <StepDots step={step} count={stepCount} />
+          </div>
+        )}
+        <Button
+          variant="ghost"
+          size="icon"
+          className={cn("shrink-0", stepCount <= 1 && "ml-auto")}
+          onClick={onClose}
+          aria-label="Close"
+        >
           <X className="h-5 w-5" />
         </Button>
       </header>
 
-      <div className="flex-1 overflow-y-auto">
-        <div className={cn("mx-auto w-full px-6 py-10", wide ? "max-w-2xl" : "max-w-lg")}>
+      <div className={cn("flex-1 overflow-y-auto", centered && "flex items-center")}>
+        <div className={cn("mx-auto w-full px-6", wide ? "max-w-2xl" : "max-w-xl", centered ? "py-10" : "py-6")}>
           {children}
         </div>
       </div>
 
-      <footer className="shrink-0 border-t border-border bg-background px-6 py-4">
-        <div className={cn("mx-auto flex w-full items-center justify-end gap-2", wide ? "max-w-2xl" : "max-w-lg")}>
-          {footer}
-        </div>
-      </footer>
+      {footer && (
+        <footer className="shrink-0 border-t border-border bg-background px-6 py-4">
+          <div className={cn("mx-auto flex w-full items-center justify-between gap-2", wide ? "max-w-2xl" : "max-w-xl")}>
+            {footer}
+          </div>
+        </footer>
+      )}
     </div>
   );
 };
