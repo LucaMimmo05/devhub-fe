@@ -22,6 +22,7 @@ import ProjectDetails from "@/pages/ProjectDetails/ProjectDetails";
 import { projectDetailsLoader } from "@/pages/ProjectDetails/projectDetailsUtils";
 import NewProject from "@/pages/Projects/NewProject";
 import NewNote from "@/pages/Notes/NewNote";
+import NoteDetail from "@/pages/Notes/NoteDetail";
 import NewCommand from "@/pages/Commands/NewCommand";
 import NewTask from "@/pages/ProjectDetails/NewTask";
 
@@ -140,6 +141,14 @@ const router = createBrowserRouter([
     element: (
       <PrivateRoute>
         <NewNote />
+      </PrivateRoute>
+    ),
+  },
+  {
+    path: "notes/:noteId",
+    element: (
+      <PrivateRoute>
+        <NoteDetail />
       </PrivateRoute>
     ),
   },

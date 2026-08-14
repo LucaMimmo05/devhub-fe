@@ -193,7 +193,7 @@ const Dashboard = () => {
               <CardContent className="flex flex-col flex-1 overflow-auto px-4 py-0 pt-2 pb-0 min-h-0">
                 {recentNotes.length > 0 ? (
                   recentNotes.map((note) => (
-                    <QuickNote key={note.id} note={note} onClick={() => navigate("/notes", { state: { noteId: note.id } })} />
+                    <QuickNote key={note.id} note={note} onClick={() => navigate(`/notes/${note.id}`)} />
                   ))
                 ) : (
                   <p className="text-sm text-muted-foreground text-center py-4">No notes yet</p>

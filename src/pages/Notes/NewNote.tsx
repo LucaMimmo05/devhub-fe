@@ -1,6 +1,7 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import WizardScreen from "@/components/wizard/WizardScreen";
+import MarkdownEditor from "@/components/notes/MarkdownEditor";
 import { Button } from "@/components/ui/button";
 import { FileText, Loader2 } from "lucide-react";
 import { useCreateNote } from "@/hooks/queries/useNotes";
@@ -11,7 +12,6 @@ const CLOSE_PATH = "/notes";
 const NewNote = () => {
   const navigate = useNavigate();
   const createNoteMutation = useCreateNote();
-  const contentRef = useRef<HTMLTextAreaElement>(null);
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -23,7 +23,7 @@ const NewNote = () => {
     try {
       const created = await createNoteMutation.mutateAsync({ title: title.trim(), content });
       toast.success("Note created!");
-      navigate("/notes", { state: { noteId: created.id } });
+      navigate(`/notes/${created.id}`);
     } catch {
       toast.error("Failed to create note.");
     }
@@ -55,17 +55,9 @@ const NewNote = () => {
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Untitled"
           autoFocus
-          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); contentRef.current?.focus(); } }}
           className="w-full border-0 bg-transparent text-4xl font-bold tracking-tight outline-none placeholder:text-muted-foreground/30"
         />
-        <textarea
-          ref={contentRef}
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          placeholder="Start writing..."
-          spellCheck={false}
-          className="min-h-[60vh] w-full resize-none border-0 bg-transparent text-base leading-relaxed outline-none placeholder:text-muted-foreground/40"
-        />
+        <MarkdownEditor content={content} onChange={setContent} placeholder="Start writing... markdown formats as you type" />
       </div>
     </WizardScreen>
   );
