@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useHeaderActions } from "@/context/HeaderActionsContext";
 import { cn } from "@/lib/utils";
-import { createNote, deleteNote, getMyNotes, updateNote } from "@/services/noteService";
+import { useNotes, useCreateNote, useUpdateNote, useDeleteNote } from "@/hooks/queries/useNotes";
 import { toast } from "sonner";
 import type { NoteType } from "@/types/noteType";
 import { timeSince } from "@/utils/getRelativeTime";
@@ -36,14 +36,18 @@ const proseClass = [
 const Notes = () => {
   const { setOnCreate } = useHeaderActions();
 
-  const [notes, setNotes] = useState<NoteType[]>([]);
+  const { data: notes = [], isError } = useNotes();
+  const createNoteMutation = useCreateNote();
+  const updateNoteMutation = useUpdateNote();
+  const deleteNoteMutation = useDeleteNote();
+  const creating = createNoteMutation.isPending;
+  const saving = updateNoteMutation.isPending;
+
   const [selectedNote, setSelectedNote] = useState<NoteType | null>(null);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [isDirty, setIsDirty] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
-  const [creating, setCreating] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [search, setSearch] = useState("");
   const [showEditor, setShowEditor] = useState(false);
@@ -52,30 +56,8 @@ const Notes = () => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const autoSaveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const selectedNoteRef = useRef<NoteType | null>(null);
+  const didSelectFromLocation = useRef(false);
   const location = useLocation();
-
-  useEffect(() => { selectedNoteRef.current = selectedNote; }, [selectedNote]);
-
-  useEffect(() => {
-    const targetId = (location.state as { noteId?: string } | null)?.noteId;
-    getMyNotes().then((loaded: NoteType[]) => {
-      setNotes(loaded);
-      if (targetId) {
-        const match = loaded.find((n) => n.id === targetId);
-        if (match) selectNote(match);
-      }
-    }).catch(() => toast.error("Failed to load notes."));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    setOnCreate?.(() => handleCreateNote());
-    return () => setOnCreate?.(undefined);
-  }, [setOnCreate]);
-
-  const filteredNotes = notes.filter((n) =>
-    n.title.toLowerCase().includes(search.toLowerCase())
-  );
 
   const selectNote = (note: NoteType) => {
     setSelectedNote(note);
@@ -88,25 +70,46 @@ const Notes = () => {
   };
 
   const handleCreateNote = async () => {
-    setCreating(true);
     try {
-      const created = await createNote({ title: "Untitled", content: "" });
-      setNotes((prev) => [created, ...prev]);
+      const created = await createNoteMutation.mutateAsync({ title: "Untitled", content: "" });
       selectNote(created);
     } catch {
       toast.error("Failed to create note.");
-    } finally {
-      setCreating(false);
     }
   };
 
+  useEffect(() => { selectedNoteRef.current = selectedNote; }, [selectedNote]);
+
+  useEffect(() => {
+    if (isError) toast.error("Failed to load notes.");
+  }, [isError]);
+
+  useEffect(() => {
+    if (didSelectFromLocation.current || notes.length === 0) return;
+    const targetId = (location.state as { noteId?: string } | null)?.noteId;
+    if (!targetId) return;
+    const match = notes.find((n) => n.id === targetId);
+    if (match) {
+      didSelectFromLocation.current = true;
+      // deferred: selectNote() sets multiple state values, avoid doing that synchronously in an effect
+      queueMicrotask(() => selectNote(match));
+    }
+  }, [notes, location.state]);
+
+  useEffect(() => {
+    setOnCreate?.(() => handleCreateNote());
+    return () => setOnCreate?.(undefined);
+  }, [setOnCreate]);
+
+  const filteredNotes = notes.filter((n) =>
+    n.title.toLowerCase().includes(search.toLowerCase())
+  );
+
   const saveNote = useCallback(async (noteId: string, t: string, c: string) => {
     if (!t.trim()) return;
-    setSaving(true);
     setSaveStatus("saving");
     try {
-      const updated = await updateNote(noteId, { title: t, content: c });
-      setNotes((prev) => prev.map((n) => (n.id === updated.id ? updated : n)));
+      const updated = await updateNoteMutation.mutateAsync({ id: noteId, data: { title: t, content: c } });
       setSelectedNote(updated);
       setIsDirty(false);
       setSaveStatus("saved");
@@ -114,10 +117,8 @@ const Notes = () => {
     } catch {
       toast.error("Failed to save note.");
       setSaveStatus("idle");
-    } finally {
-      setSaving(false);
     }
-  }, []);
+  }, [updateNoteMutation]);
 
   const scheduleAutoSave = useCallback((t: string, c: string) => {
     if (autoSaveTimeout.current) clearTimeout(autoSaveTimeout.current);
@@ -136,9 +137,8 @@ const Notes = () => {
   const handleDelete = async () => {
     if (!selectedNote) return;
     try {
-      await deleteNote(selectedNote.id);
+      await deleteNoteMutation.mutateAsync(selectedNote.id);
       const remaining = notes.filter((n) => n.id !== selectedNote.id);
-      setNotes(remaining);
       if (remaining.length > 0) {
         selectNote(remaining[0]);
       } else {

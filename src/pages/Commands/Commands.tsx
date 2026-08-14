@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useHeaderActions } from "@/context/HeaderActionsContext";
-import { getMyCommands, createCommand, updateCommand, deleteCommand } from "@/services/commandService";
+import { useCommands, useCreateCommand, useUpdateCommand, useDeleteCommand } from "@/hooks/queries/useCommands";
 import type { CommandType } from "@/types/commandType";
 import { CATEGORIES } from "@/types/commandType";
 import PageContainer from "@/layouts/PageContainer";
@@ -47,9 +47,8 @@ const CopyButton = ({ text }: { text: string }) => {
 const Commands = () => {
   const { setOnCreate } = useHeaderActions();
 
-  const [commands, setCommands] = useState<CommandType[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState<string>("All");
 
   const [editingCmd, setEditingCmd] = useState<CommandType | null>(null);
@@ -62,27 +61,31 @@ const Commands = () => {
   const [fDescription, setFDescription] = useState("");
   const [fCategory, setFCategory] = useState("Bash");
   const [fCustomCategory, setFCustomCategory] = useState("");
-  const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const currentSearch = useRef("");
-  const currentCategory = useRef("All");
 
-  const fetchCommands = (category: string, search: string) => {
-    setLoading(true);
-    getMyCommands(
-      category === "All" ? undefined : category,
-      search || undefined
-    )
-      .then(setCommands)
-      .catch(() => toast.error("Failed to load commands."))
-      .finally(() => setLoading(false));
+  const {
+    data: commands = [],
+    isLoading: loading,
+    isError,
+  } = useCommands(activeCategory === "All" ? undefined : activeCategory, debouncedSearch || undefined);
+  const createCommandMutation = useCreateCommand();
+  const updateCommandMutation = useUpdateCommand();
+  const deleteCommandMutation = useDeleteCommand();
+  const saving = createCommandMutation.isPending || updateCommandMutation.isPending;
+
+  const openCreate = () => {
+    setIsNew(true);
+    setEditingCmd(null);
+    setFTitle(""); setFCommand(""); setFDescription(""); setFCategory("Bash"); setFCustomCategory("");
+    setConfirmDelete(false);
+    setOpenSheet(true);
   };
 
   useEffect(() => {
-    fetchCommands("All", "");
-  }, []);
+    if (isError) toast.error("Failed to load commands.");
+  }, [isError]);
 
   useEffect(() => {
     setOnCreate?.(() => openCreate());
@@ -91,16 +94,13 @@ const Commands = () => {
 
   const handleCategoryChange = (cat: string) => {
     setActiveCategory(cat);
-    currentCategory.current = cat;
-    fetchCommands(cat, currentSearch.current);
   };
 
   const handleSearchChange = (value: string) => {
     setSearch(value);
-    currentSearch.current = value;
     if (searchTimeout.current) clearTimeout(searchTimeout.current);
     searchTimeout.current = setTimeout(() => {
-      fetchCommands(currentCategory.current, value);
+      setDebouncedSearch(value);
     }, 400);
   };
 
@@ -118,14 +118,6 @@ const Commands = () => {
     ? fCustomCategory.trim()
     : fCategory;
 
-  const openCreate = () => {
-    setIsNew(true);
-    setEditingCmd(null);
-    setFTitle(""); setFCommand(""); setFDescription(""); setFCategory("Bash"); setFCustomCategory("");
-    setConfirmDelete(false);
-    setOpenSheet(true);
-  };
-
   const openEdit = (cmd: CommandType) => {
     setIsNew(false);
     setEditingCmd(cmd);
@@ -142,31 +134,25 @@ const Commands = () => {
 
   const handleSave = async () => {
     if (!fTitle.trim() || !fCommand.trim() || !resolvedCategory) return;
-    setSaving(true);
     try {
       const payload = { title: fTitle, command: fCommand, description: fDescription || undefined, category: resolvedCategory };
       if (isNew) {
-        const created = await createCommand(payload);
-        setCommands((prev) => [created, ...prev]);
+        await createCommandMutation.mutateAsync(payload);
         toast.success("Command created!");
       } else if (editingCmd) {
-        const updated = await updateCommand(editingCmd.id, payload);
-        setCommands((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+        await updateCommandMutation.mutateAsync({ id: editingCmd.id, data: payload });
         toast.success("Command updated!");
       }
       setOpenSheet(false);
     } catch {
       toast.error("Failed to save command.");
-    } finally {
-      setSaving(false);
     }
   };
 
   const handleDelete = async () => {
     if (!editingCmd) return;
     try {
-      await deleteCommand(editingCmd.id);
-      setCommands((prev) => prev.filter((c) => c.id !== editingCmd.id));
+      await deleteCommandMutation.mutateAsync(editingCmd.id);
       setOpenSheet(false);
       toast.success("Command deleted.");
     } catch {

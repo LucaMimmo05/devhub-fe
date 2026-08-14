@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -10,8 +10,13 @@ import NoData from "@/components/ui/NoData";
 import TaskTable from "@/components/ui/TaskTable";
 import TaskModal from "@/components/ui/TaskModal";
 import PageContainer from "@/layouts/PageContainer";
-import { updateProject, addProjectMember, removeProjectMember } from "@/services/projectService";
-import { getProjectTasks, createTask } from "@/services/taskService";
+import {
+  useProject,
+  useUpdateProject,
+  useAddProjectMember,
+  useRemoveProjectMember,
+} from "@/hooks/queries/useProjects";
+import { useProjectTasks, useCreateTask } from "@/hooks/queries/useTasks";
 import { searchUsers } from "@/services/userService";
 import type { ProjectType, ProjectMemberSummary } from "@/types/projectType";
 import type { TaskType } from "@/types/taskType";
@@ -127,9 +132,12 @@ const ProjectDetails = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const [project, setProject] = useState<ProjectType>(initialProject);
-  const [tasks, setTasks] = useState<TaskType[]>([]);
-  const [loadingTasks, setLoadingTasks] = useState(true);
+  const { data: project = initialProject } = useProject(initialProject.id, initialProject);
+  const { data: tasks = [], isLoading: loadingTasks } = useProjectTasks(project.id);
+  const updateProjectMutation = useUpdateProject();
+  const addMemberMutation = useAddProjectMember();
+  const removeMemberMutation = useRemoveProjectMember();
+  const createTaskMutation = useCreateTask();
 
   // Add task modal
   const [openTaskModal, setOpenTaskModal] = useState(false);
@@ -138,7 +146,7 @@ const ProjectDetails = () => {
   const [taskPriority, setTaskPriority] = useState<Priority>("MEDIUM");
   const [taskStatus, setTaskStatus] = useState<Status>("PENDING");
   const [taskDueDate, setTaskDueDate] = useState("");
-  const [savingTask, setSavingTask] = useState(false);
+  const savingTask = createTaskMutation.isPending;
 
   const [editingTask, setEditingTask] = useState<TaskType | null>(null);
 
@@ -149,7 +157,7 @@ const ProjectDetails = () => {
   const [editPriority, setEditPriority] = useState<Priority>("MEDIUM");
   const [editStatus, setEditStatus] = useState<Status>("PENDING");
   const [editDueDate, setEditDueDate] = useState("");
-  const [savingEdit, setSavingEdit] = useState(false);
+  const savingEdit = updateProjectMutation.isPending;
 
   // Member management
   const [openMemberModal, setOpenMemberModal] = useState(false);
@@ -192,13 +200,6 @@ const ProjectDetails = () => {
     );
   };
 
-  useEffect(() => {
-    getProjectTasks(project.id)
-      .then(setTasks)
-      .catch(console.error)
-      .finally(() => setLoadingTasks(false));
-  }, [project.id]);
-
   const taskHeader: HeaderType[] = [
     { label: "Task", id: 1 },
     { label: "Status", id: 2 },
@@ -219,9 +220,8 @@ const ProjectDetails = () => {
 
   const handleCreateTask = async () => {
     if (!taskTitle.trim()) return;
-    setSavingTask(true);
     try {
-      const created = await createTask({
+      await createTaskMutation.mutateAsync({
         title: taskTitle,
         description: taskDescription || undefined,
         status: taskStatus,
@@ -229,12 +229,9 @@ const ProjectDetails = () => {
         dueDate: taskDueDate ? new Date(taskDueDate).toISOString() : undefined,
         projectId: project.id,
       });
-      setTasks((prev) => [...prev, created]);
       handleCloseTaskModal();
     } catch (err) {
       console.error("Failed to create task:", err);
-    } finally {
-      setSavingTask(false);
     }
   };
 
@@ -249,22 +246,21 @@ const ProjectDetails = () => {
   };
 
   const handleSaveEdit = async () => {
-    setSavingEdit(true);
     try {
-      const updated = await updateProject(project.id, {
-        title: editTitle,
-        description: editDescription,
-        priority: editPriority,
-        status: editStatus,
-        dueDate: editDueDate ? new Date(editDueDate).toISOString() : undefined,
-        ownerId: project.ownerId,
+      await updateProjectMutation.mutateAsync({
+        id: project.id,
+        data: {
+          title: editTitle,
+          description: editDescription,
+          priority: editPriority,
+          status: editStatus,
+          dueDate: editDueDate ? new Date(editDueDate).toISOString() : undefined,
+          ownerId: project.ownerId,
+        },
       });
-      setProject(updated);
       setOpenEditModal(false);
     } catch (err) {
       console.error("Failed to update project:", err);
-    } finally {
-      setSavingEdit(false);
     }
   };
 
@@ -296,8 +292,7 @@ const ProjectDetails = () => {
   const handleAddMember = async (profileId: string) => {
     setAddingMember(profileId);
     try {
-      const updated = await addProjectMember(project.id, profileId);
-      setProject(updated);
+      await addMemberMutation.mutateAsync({ projectId: project.id, profileId });
       setSearchResults((prev) => prev.filter((r) => r.id !== profileId));
     } catch (err) {
       console.error("Failed to add member:", err);
@@ -309,8 +304,7 @@ const ProjectDetails = () => {
   const handleRemoveMember = async (profileId: string) => {
     setRemovingMember(profileId);
     try {
-      const updated = await removeProjectMember(project.id, profileId);
-      setProject(updated);
+      await removeMemberMutation.mutateAsync({ projectId: project.id, profileId });
     } catch (err) {
       console.error("Failed to remove member:", err);
     } finally {
@@ -502,11 +496,10 @@ const ProjectDetails = () => {
       <TaskModal
         task={editingTask}
         onClose={() => setEditingTask(null)}
-        onSaved={(updated) => setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)))}
+        onSaved={() => {}}
         members={assignableMembers}
         canAssign={canAssignTask(editingTask)}
         canEdit={canAssignTask(editingTask)}
-        onDeleted={(id) => setTasks((prev) => prev.filter((t) => t.id !== id))}
       />
 
       {/* Add Task Modal */}

@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/hooks/queries/keys";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -109,6 +111,7 @@ const TaskModal = ({
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [editMode, setEditMode] = useState(false);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (task) {
@@ -153,6 +156,7 @@ const TaskModal = ({
         dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
         assignedToProfileId: canAssign && assignedToProfileId ? assignedToProfileId : undefined,
       });
+      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
       onSaved(updated);
       setEditMode(false);
     } catch (err) {
@@ -167,6 +171,7 @@ const TaskModal = ({
     setDeleting(true);
     try {
       await deleteTask(task.id);
+      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
       onDeleted?.(task.id);
       onClose();
     } catch (err) {

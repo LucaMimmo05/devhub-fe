@@ -25,14 +25,12 @@ import Task from "@/components/ui/Task";
 import QuickNote from "@/components/ui/QuickNote";
 import PriorityBadge from "@/components/ui/PriorityBadge";
 import { useEffect, useState } from "react";
-import { getUserProject, createProject } from "@/services/projectService";
-import { getMyTasks } from "@/services/taskService";
-import { getMyNotes, createNote } from "@/services/noteService";
-import { createCommand, getMyCommands } from "@/services/commandService";
+import { useProjects, useCreateProject } from "@/hooks/queries/useProjects";
+import { useMyTasks } from "@/hooks/queries/useTasks";
+import { useNotes, useCreateNote } from "@/hooks/queries/useNotes";
+import { useCommands, useCreateCommand } from "@/hooks/queries/useCommands";
 import { CATEGORIES } from "@/types/commandType";
-import type { ProjectType } from "@/types/projectType";
 import type { TaskType } from "@/types/taskType";
-import type { NoteType } from "@/types/noteType";
 import type { Priority, Status } from "@/types/PriorityAndStatusType";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -57,15 +55,23 @@ const Dashboard = () => {
   const { setOnCreateProject, setOnCreateNote, setOnCreateCommand } = useHeaderActions();
   const navigate = useNavigate();
 
-  const [previewProjects, setPreviewProjects] = useState<ProjectType[]>([]);
-  const [recentTasks, setRecentTasks] = useState<TaskType[]>([]);
-  const [recentNotes, setRecentNotes] = useState<NoteType[]>([]);
+  const { data: projects } = useProjects();
+  const { data: tasks } = useMyTasks();
+  const { data: notes } = useNotes();
+  const { data: commands } = useCommands();
+  const createProjectMutation = useCreateProject();
+  const createNoteMutation = useCreateNote();
+  const createCommandMutation = useCreateCommand();
+
+  const previewProjects = projects?.slice(0, 3) ?? [];
+  const recentTasks = tasks?.slice(0, 5) ?? [];
+  const recentNotes = notes?.slice(0, 3) ?? [];
 
   // Stats
-  const [totalProjects, setTotalProjects] = useState<number | null>(null);
-  const [openTasks, setOpenTasks] = useState<number | null>(null);
-  const [totalNotes, setTotalNotes] = useState<number | null>(null);
-  const [totalCommands, setTotalCommands] = useState<number | null>(null);
+  const totalProjects = projects?.length ?? null;
+  const openTasks = tasks?.filter((t: TaskType) => t.status === "PENDING" || t.status === "IN_PROGRESS").length ?? null;
+  const totalNotes = notes?.length ?? null;
+  const totalCommands = commands?.length ?? null;
 
   // Clock
   const [now, setNow] = useState(new Date());
@@ -81,13 +87,13 @@ const Dashboard = () => {
   const [projectPriority, setProjectPriority] = useState<Priority>("LOW");
   const [projectStatus] = useState<Status>("PENDING");
   const [projectDueDate, setProjectDueDate] = useState("");
-  const [creatingProject, setCreatingProject] = useState(false);
+  const creatingProject = createProjectMutation.isPending;
 
   // Note modal
   const [openNote, setOpenNote] = useState(false);
   const [noteTitle, setNoteTitle] = useState("");
   const [noteContent, setNoteContent] = useState("");
-  const [creatingNote, setCreatingNote] = useState(false);
+  const creatingNote = createNoteMutation.isPending;
 
   // Command modal
   const [openCommand, setOpenCommand] = useState(false);
@@ -95,23 +101,7 @@ const Dashboard = () => {
   const [cmdValue, setCmdValue] = useState("");
   const [cmdDesc, setCmdDesc] = useState("");
   const [cmdCategory, setCmdCategory] = useState("Bash");
-  const [creatingCommand, setCreatingCommand] = useState(false);
-
-  useEffect(() => {
-    getUserProject().then((projects) => {
-      setPreviewProjects(projects.slice(0, 3));
-      setTotalProjects(projects.length);
-    }).catch(console.error);
-    getMyTasks().then((tasks) => {
-      setRecentTasks(tasks.slice(0, 5));
-      setOpenTasks(tasks.filter((t: TaskType) => t.status === "PENDING" || t.status === "IN_PROGRESS").length);
-    }).catch(console.error);
-    getMyNotes().then((notes) => {
-      setRecentNotes(notes.slice(0, 3));
-      setTotalNotes(notes.length);
-    }).catch(console.error);
-    getMyCommands().then((cmds) => setTotalCommands(cmds.length)).catch(console.error);
-  }, []);
+  const creatingCommand = createCommandMutation.isPending;
 
   // Registra i modal opener nel context (singola freccia — i ref non sono setState)
   useEffect(() => {
@@ -127,9 +117,8 @@ const Dashboard = () => {
 
   const handleCreateProject = async () => {
     if (!projectTitle.trim() || !user?.id) return;
-    setCreatingProject(true);
     try {
-      const created = await createProject({
+      await createProjectMutation.mutateAsync({
         title: projectTitle.trim(),
         description: projectDesc.trim(),
         ownerId: user.id,
@@ -138,45 +127,35 @@ const Dashboard = () => {
         status: projectStatus,
         dueDate: projectDueDate || undefined,
       });
-      setPreviewProjects((prev) => [created, ...prev].slice(0, 3));
       toast.success("Project created!");
       setOpenProject(false);
       setProjectTitle(""); setProjectDesc(""); setProjectDueDate("");
     } catch {
       toast.error("Failed to create project.");
-    } finally {
-      setCreatingProject(false);
     }
   };
 
   const handleCreateNote = async () => {
     if (!noteTitle.trim()) return;
-    setCreatingNote(true);
     try {
-      const created = await createNote({ title: noteTitle.trim(), content: noteContent });
-      setRecentNotes((prev) => [created, ...prev].slice(0, 3));
+      await createNoteMutation.mutateAsync({ title: noteTitle.trim(), content: noteContent });
       toast.success("Note created!");
       setOpenNote(false);
       setNoteTitle(""); setNoteContent("");
     } catch {
       toast.error("Failed to create note.");
-    } finally {
-      setCreatingNote(false);
     }
   };
 
   const handleCreateCommand = async () => {
     if (!cmdTitle.trim() || !cmdValue.trim()) return;
-    setCreatingCommand(true);
     try {
-      await createCommand({ title: cmdTitle.trim(), command: cmdValue.trim(), description: cmdDesc, category: cmdCategory });
+      await createCommandMutation.mutateAsync({ title: cmdTitle.trim(), command: cmdValue.trim(), description: cmdDesc, category: cmdCategory });
       toast.success("Command saved!");
       setOpenCommand(false);
       setCmdTitle(""); setCmdValue(""); setCmdDesc(""); setCmdCategory("Bash");
     } catch {
       toast.error("Failed to save command.");
-    } finally {
-      setCreatingCommand(false);
     }
   };
 

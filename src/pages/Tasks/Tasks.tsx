@@ -8,7 +8,7 @@ import TaskSheet from "@/components/ui/TaskSheet";
 import type { HeaderType } from "../ProjectDetails/projectDetailsUtils";
 import DropdownFilter from "@/components/ui/DropdownFilter";
 import { Button } from "@/components/ui/button";
-import { getMyTasks } from "@/services/taskService";
+import { useMyTasks } from "@/hooks/queries/useTasks";
 import type { TaskType } from "@/types/taskType";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
@@ -37,44 +37,37 @@ const Tasks = () => {
 
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [tasks, setTasks] = useState<TaskType[]>([]);
-  const [loading, setLoading] = useState(true);
   const [filterText, setFilterText] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | undefined>();
   const [priorityFilter, setPriorityFilter] = useState<string | undefined>();
   const [editingTask, setEditingTask] = useState<TaskType | null>(null);
 
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const currentFilters = useRef({ status: undefined as string | undefined, priority: undefined as string | undefined, search: "" });
 
-  const fetchTasks = (status?: string, priority?: string, search?: string) => {
-    setLoading(true);
-    currentFilters.current = { status, priority, search: search ?? "" };
-    getMyTasks({ status, priority, search: search || undefined })
-      .then(setTasks)
-      .catch(() => toast.error("Failed to load tasks."))
-      .finally(() => setLoading(false));
-  };
+  const { data: tasks = [], isLoading: loading, isError } = useMyTasks({
+    status: statusFilter,
+    priority: priorityFilter,
+    search: debouncedSearch || undefined,
+  });
 
   useEffect(() => {
-    fetchTasks();
-  }, []);
+    if (isError) toast.error("Failed to load tasks.");
+  }, [isError]);
 
   const handleStatusChange = (value: string | undefined) => {
     setStatusFilter(value);
-    fetchTasks(value, priorityFilter, filterText);
   };
 
   const handlePriorityChange = (value: string | undefined) => {
     setPriorityFilter(value);
-    fetchTasks(statusFilter, value, filterText);
   };
 
   const handleSearchChange = (value: string) => {
     setFilterText(value);
     if (searchTimeout.current) clearTimeout(searchTimeout.current);
     searchTimeout.current = setTimeout(() => {
-      fetchTasks(statusFilter, priorityFilter, value);
+      setDebouncedSearch(value);
     }, 400);
   };
 
@@ -82,7 +75,7 @@ const Tasks = () => {
     setStatusFilter(undefined);
     setPriorityFilter(undefined);
     setFilterText("");
-    fetchTasks();
+    setDebouncedSearch("");
   };
 
   const isFiltered = !!statusFilter || !!priorityFilter || !!filterText;
@@ -160,11 +153,7 @@ const Tasks = () => {
       <TaskSheet
         task={editingTask}
         onClose={() => setEditingTask(null)}
-        onSaved={(updated) => {
-          setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
-          setEditingTask(null);
-        }}
-        onDeleted={(id) => setTasks((prev) => prev.filter((t) => t.id !== id))}
+        onSaved={() => setEditingTask(null)}
         canEdit={!!user && !!editingTask?.createdByProfileId && editingTask.createdByProfileId === user.id}
       />
     </PageContainer>

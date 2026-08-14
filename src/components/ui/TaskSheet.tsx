@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/hooks/queries/keys";
 import { toast } from "sonner";
 import {
   Sheet,
@@ -51,6 +53,7 @@ const TaskSheet = ({ task, onClose, onSaved, onDeleted, members, canAssign, canE
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (task) {
@@ -76,6 +79,7 @@ const TaskSheet = ({ task, onClose, onSaved, onDeleted, members, canAssign, canE
         dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
         assignedToProfileId: canAssign && assignedToProfileId ? assignedToProfileId : undefined,
       });
+      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
       onSaved(updated);
       onClose();
       toast.success("Task updated!");
@@ -91,6 +95,7 @@ const TaskSheet = ({ task, onClose, onSaved, onDeleted, members, canAssign, canE
     setDeleting(true);
     try {
       await deleteTask(task.id);
+      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
       onDeleted?.(task.id);
       onClose();
       toast.success("Task deleted.");

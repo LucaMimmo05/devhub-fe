@@ -2,12 +2,12 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useHeaderActions } from "@/context/HeaderActionsContext";
 import {
-  createProject,
-  getUserProject,
-  deleteProject,
-  updateProject,
-} from "@/services/projectService";
-import type { ProjectRequest, ProjectType } from "@/types/projectType";
+  useProjects,
+  useCreateProject,
+  useDeleteProject,
+  useUpdateProject,
+} from "@/hooks/queries/useProjects";
+import type { ProjectRequest } from "@/types/projectType";
 
 import PageContainer from "@/layouts/PageContainer";
 import Modal from "@/components/ui/Modal";
@@ -37,7 +37,11 @@ const Projects = () => {
   const { user } = useAuth();
   const { setOnCreate } = useHeaderActions();
 
-  const [projects, setProjects] = useState<ProjectType[]>([]);
+  const { data: projects = [], isError } = useProjects();
+  const createProjectMutation = useCreateProject();
+  const deleteProjectMutation = useDeleteProject();
+  const updateProjectMutation = useUpdateProject();
+
   const [activeTab, setActiveTab] = useState<Tab>("Active");
   const [openModal, setOpenModal] = useState(false);
 
@@ -47,11 +51,11 @@ const Projects = () => {
   const [priority, setPriority] = useState<Priority>("LOW");
   const [status, setStatus] = useState<Status>("PENDING");
   const [dueDate, setDueDate] = useState<Date | null>(null);
-  const [creating, setCreating] = useState(false);
+  const creating = createProjectMutation.isPending;
 
   useEffect(() => {
-    getUserProject().then(setProjects).catch(() => toast.error("Failed to load projects."));
-  }, []);
+    if (isError) toast.error("Failed to load projects.");
+  }, [isError]);
 
   useEffect(() => {
     setOnCreate?.(() => setOpenModal(true));
@@ -65,12 +69,10 @@ const Projects = () => {
     setPriority("LOW");
     setStatus("PENDING");
     setDueDate(null);
-    setCreating(false);
   };
 
   const handleCreate = async () => {
     if (!title.trim() || !user?.id) return;
-    setCreating(true);
 
     const newProject: ProjectRequest = {
       title: title.trim(),
@@ -84,8 +86,7 @@ const Projects = () => {
     };
 
     try {
-      const created = await createProject(newProject);
-      setProjects((prev) => [...prev, created]);
+      await createProjectMutation.mutateAsync(newProject);
       toast.success("Project created successfully!");
       handleClose();
     } catch (err: unknown) {
@@ -96,15 +97,12 @@ const Projects = () => {
           ?.response?.data?.title ??
         "Failed to create project. Please try again.";
       toast.error(msg);
-    } finally {
-      setCreating(false);
     }
   };
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteProject(id);
-      setProjects((prev) => prev.filter((p) => p.id !== id));
+      await deleteProjectMutation.mutateAsync(id);
       toast.success("Project deleted.");
     } catch {
       toast.error("Failed to delete project.");
@@ -115,16 +113,18 @@ const Projects = () => {
     const project = projects.find((p) => p.id === id);
     if (!project) return;
     try {
-      const updated = await updateProject(id, {
-        title: project.title,
-        description: project.description,
-        imageUrl: project.imageUrl,
-        priority: project.priority,
-        status: "ARCHIVED",
-        dueDate: project.dueDate,
-        ownerId: project.ownerId,
+      await updateProjectMutation.mutateAsync({
+        id,
+        data: {
+          title: project.title,
+          description: project.description,
+          imageUrl: project.imageUrl,
+          priority: project.priority,
+          status: "ARCHIVED",
+          dueDate: project.dueDate,
+          ownerId: project.ownerId,
+        },
       });
-      setProjects((prev) => prev.map((p) => (p.id === id ? updated : p)));
       toast.success("Project archived.");
     } catch {
       toast.error("Failed to archive project.");
@@ -135,16 +135,18 @@ const Projects = () => {
     const project = projects.find((p) => p.id === id);
     if (!project) return;
     try {
-      const updated = await updateProject(id, {
-        title: project.title,
-        description: project.description,
-        imageUrl: project.imageUrl,
-        priority: project.priority,
-        status: "PENDING",
-        dueDate: project.dueDate,
-        ownerId: project.ownerId,
+      await updateProjectMutation.mutateAsync({
+        id,
+        data: {
+          title: project.title,
+          description: project.description,
+          imageUrl: project.imageUrl,
+          priority: project.priority,
+          status: "PENDING",
+          dueDate: project.dueDate,
+          ownerId: project.ownerId,
+        },
       });
-      setProjects((prev) => prev.map((p) => (p.id === id ? updated : p)));
       toast.success("Project unarchived.");
     } catch {
       toast.error("Failed to unarchive project.");
