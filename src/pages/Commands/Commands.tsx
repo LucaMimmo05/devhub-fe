@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCommands, useUpdateCommand, useDeleteCommand } from "@/hooks/queries/useCommands";
 import type { CommandType } from "@/types/commandType";
@@ -32,7 +32,8 @@ const categoryColor: Record<string, string> = {
 
 const CopyButton = ({ text }: { text: string }) => {
   const [copied, setCopied] = useState(false);
-  const handle = () => {
+  const handle = (e: MouseEvent) => {
+    e.stopPropagation();
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
