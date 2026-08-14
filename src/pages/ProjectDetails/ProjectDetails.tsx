@@ -16,7 +16,7 @@ import {
   useAddProjectMember,
   useRemoveProjectMember,
 } from "@/hooks/queries/useProjects";
-import { useProjectTasks, useCreateTask } from "@/hooks/queries/useTasks";
+import { useProjectTasks } from "@/hooks/queries/useTasks";
 import { searchUsers } from "@/services/userService";
 import type { ProjectType, ProjectMemberSummary } from "@/types/projectType";
 import type { TaskType } from "@/types/taskType";
@@ -137,16 +137,6 @@ const ProjectDetails = () => {
   const updateProjectMutation = useUpdateProject();
   const addMemberMutation = useAddProjectMember();
   const removeMemberMutation = useRemoveProjectMember();
-  const createTaskMutation = useCreateTask();
-
-  // Add task modal
-  const [openTaskModal, setOpenTaskModal] = useState(false);
-  const [taskTitle, setTaskTitle] = useState("");
-  const [taskDescription, setTaskDescription] = useState("");
-  const [taskPriority, setTaskPriority] = useState<Priority>("MEDIUM");
-  const [taskStatus, setTaskStatus] = useState<Status>("PENDING");
-  const [taskDueDate, setTaskDueDate] = useState("");
-  const savingTask = createTaskMutation.isPending;
 
   const [editingTask, setEditingTask] = useState<TaskType | null>(null);
 
@@ -207,33 +197,6 @@ const ProjectDetails = () => {
     { label: "Due Date", id: 4 },
     { label: "Assigned To", id: 5 },
   ];
-
-  // Task creation
-  const handleCloseTaskModal = () => {
-    setOpenTaskModal(false);
-    setTaskTitle("");
-    setTaskDescription("");
-    setTaskPriority("MEDIUM");
-    setTaskStatus("PENDING");
-    setTaskDueDate("");
-  };
-
-  const handleCreateTask = async () => {
-    if (!taskTitle.trim()) return;
-    try {
-      await createTaskMutation.mutateAsync({
-        title: taskTitle,
-        description: taskDescription || undefined,
-        status: taskStatus,
-        priority: taskPriority,
-        dueDate: taskDueDate ? new Date(taskDueDate).toISOString() : undefined,
-        projectId: project.id,
-      });
-      handleCloseTaskModal();
-    } catch (err) {
-      console.error("Failed to create task:", err);
-    }
-  };
 
   // Edit project
   const openEdit = () => {
@@ -355,7 +318,7 @@ const ProjectDetails = () => {
           <Card className="flex flex-col lg:flex-1 lg:min-h-0">
             <CardHeader className="flex flex-row items-center justify-between shrink-0">
               <CardTitle>Tasks ({tasks.length})</CardTitle>
-              <Button size="sm" variant="outline" onClick={() => setOpenTaskModal(true)}>
+              <Button size="sm" variant="outline" onClick={() => navigate(`/projects/${project.id}/tasks/new`)}>
                 <Plus className="h-4 w-4 mr-1" /> Add Task
               </Button>
             </CardHeader>
@@ -501,86 +464,6 @@ const ProjectDetails = () => {
         canAssign={canAssignTask(editingTask)}
         canEdit={canAssignTask(editingTask)}
       />
-
-      {/* Add Task Modal */}
-      <Modal
-        open={openTaskModal}
-        onOpenChange={handleCloseTaskModal}
-        title="Add Task"
-        description="Add a new task to this project."
-        footer={
-          <div className="flex justify-end gap-2">
-            <Button
-              onClick={handleCreateTask}
-              disabled={savingTask || !taskTitle.trim()}
-            >
-              {savingTask && <Loader2 className="animate-spin h-4 w-4 mr-2" />}
-              Create
-            </Button>
-            <Button variant="outline" onClick={handleCloseTaskModal}>
-              Cancel
-            </Button>
-          </div>
-        }
-      >
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-2">
-            <Label>Title</Label>
-            <Input
-              value={taskTitle}
-              onChange={(e) => setTaskTitle(e.target.value)}
-              placeholder="Task title"
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label>Description</Label>
-            <Textarea
-              value={taskDescription}
-              onChange={(e) => setTaskDescription(e.target.value)}
-              placeholder="Optional description"
-              rows={3}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col gap-2">
-              <Label>Priority</Label>
-              <Select
-                value={taskPriority}
-                onValueChange={(v) => setTaskPriority(v as Priority)}
-              >
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="LOW">Low</SelectItem>
-                  <SelectItem value="MEDIUM">Medium</SelectItem>
-                  <SelectItem value="HIGH">High</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label>Status</Label>
-              <Select
-                value={taskStatus}
-                onValueChange={(v) => setTaskStatus(v as Status)}
-              >
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="PENDING">Pending</SelectItem>
-                  <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                  <SelectItem value="COMPLETED">Completed</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label>Due Date</Label>
-            <Input
-              type="date"
-              value={taskDueDate}
-              onChange={(e) => setTaskDueDate(e.target.value)}
-            />
-          </div>
-        </div>
-      </Modal>
 
       {/* Edit Project Sheet */}
       <Sheet open={openEditModal} onOpenChange={(open) => !open && setOpenEditModal(false)}>

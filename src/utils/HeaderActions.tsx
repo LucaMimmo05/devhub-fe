@@ -8,13 +8,12 @@ import {
 import { Plus, RefreshCw, ChevronDown, Trash2, Edit, FolderGit2, FileText, Terminal } from "lucide-react";
 
 interface HeaderActionsHandlers {
-  onCreateProject?: () => void;
-  onCreateNote?: () => void;
-  onCreateCommand?: () => void;
+  onNavigate?: (path: string) => void;
+  /** Target path for the plain "add" header button. */
+  createPath?: string;
   onSync?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
-  onNavigate?: (path: string) => void;
 }
 
 export const getHeaderActions = (
@@ -28,15 +27,15 @@ export const getHeaderActions = (
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => handlers.onCreateProject?.()}>
+        <DropdownMenuItem onClick={() => handlers.onNavigate?.("/projects/new")}>
           <FolderGit2 className="mr-2 h-4 w-4" />
           Project
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handlers.onCreateNote?.()}>
+        <DropdownMenuItem onClick={() => handlers.onNavigate?.("/notes/new")}>
           <FileText className="mr-2 h-4 w-4" />
           Note
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handlers.onCreateCommand?.()}>
+        <DropdownMenuItem onClick={() => handlers.onNavigate?.("/commands/new")}>
           <Terminal className="mr-2 h-4 w-4" />
           Command
         </DropdownMenuItem>
@@ -45,7 +44,7 @@ export const getHeaderActions = (
   ),
 
   add: (
-    <Button onClick={handlers.onCreateProject}>
+    <Button onClick={() => handlers.createPath && handlers.onNavigate?.(handlers.createPath)}>
       <Plus />
     </Button>
   ),

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useHeaderActions } from "@/context/HeaderActionsContext";
-import { useCommands, useCreateCommand, useUpdateCommand, useDeleteCommand } from "@/hooks/queries/useCommands";
+import { useNavigate } from "react-router-dom";
+import { useCommands, useUpdateCommand, useDeleteCommand } from "@/hooks/queries/useCommands";
 import type { CommandType } from "@/types/commandType";
 import { CATEGORIES } from "@/types/commandType";
 import PageContainer from "@/layouts/PageContainer";
@@ -45,7 +45,7 @@ const CopyButton = ({ text }: { text: string }) => {
 };
 
 const Commands = () => {
-  const { setOnCreate } = useHeaderActions();
+  const navigate = useNavigate();
 
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -53,7 +53,6 @@ const Commands = () => {
 
   const [editingCmd, setEditingCmd] = useState<CommandType | null>(null);
   const [openSheet, setOpenSheet] = useState(false);
-  const [isNew, setIsNew] = useState(false);
 
   // Form state
   const [fTitle, setFTitle] = useState("");
@@ -70,27 +69,13 @@ const Commands = () => {
     isLoading: loading,
     isError,
   } = useCommands(activeCategory === "All" ? undefined : activeCategory, debouncedSearch || undefined);
-  const createCommandMutation = useCreateCommand();
   const updateCommandMutation = useUpdateCommand();
   const deleteCommandMutation = useDeleteCommand();
-  const saving = createCommandMutation.isPending || updateCommandMutation.isPending;
-
-  const openCreate = () => {
-    setIsNew(true);
-    setEditingCmd(null);
-    setFTitle(""); setFCommand(""); setFDescription(""); setFCategory("Bash"); setFCustomCategory("");
-    setConfirmDelete(false);
-    setOpenSheet(true);
-  };
+  const saving = updateCommandMutation.isPending;
 
   useEffect(() => {
     if (isError) toast.error("Failed to load commands.");
   }, [isError]);
-
-  useEffect(() => {
-    setOnCreate?.(() => openCreate());
-    return () => setOnCreate?.(undefined);
-  }, [setOnCreate]);
 
   const handleCategoryChange = (cat: string) => {
     setActiveCategory(cat);
@@ -119,7 +104,6 @@ const Commands = () => {
     : fCategory;
 
   const openEdit = (cmd: CommandType) => {
-    setIsNew(false);
     setEditingCmd(cmd);
     setFTitle(cmd.title);
     setFCommand(cmd.command);
@@ -133,16 +117,11 @@ const Commands = () => {
   };
 
   const handleSave = async () => {
-    if (!fTitle.trim() || !fCommand.trim() || !resolvedCategory) return;
+    if (!editingCmd || !fTitle.trim() || !fCommand.trim() || !resolvedCategory) return;
     try {
       const payload = { title: fTitle, command: fCommand, description: fDescription || undefined, category: resolvedCategory };
-      if (isNew) {
-        await createCommandMutation.mutateAsync(payload);
-        toast.success("Command created!");
-      } else if (editingCmd) {
-        await updateCommandMutation.mutateAsync({ id: editingCmd.id, data: payload });
-        toast.success("Command updated!");
-      }
+      await updateCommandMutation.mutateAsync({ id: editingCmd.id, data: payload });
+      toast.success("Command updated!");
       setOpenSheet(false);
     } catch {
       toast.error("Failed to save command.");
@@ -205,7 +184,7 @@ const Commands = () => {
             <h3 className="font-semibold text-lg">No commands yet</h3>
             <p className="text-muted-foreground text-sm">Save your first snippet to get started.</p>
           </div>
-          <Button onClick={openCreate}>New Command</Button>
+          <Button onClick={() => navigate("/commands/new")}>New Command</Button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
@@ -243,12 +222,12 @@ const Commands = () => {
         </div>
       )}
 
-      {/* Create / Edit sheet */}
+      {/* Edit sheet */}
       <Sheet open={openSheet} onOpenChange={(open) => !open && setOpenSheet(false)}>
         <SheetContent className="flex flex-col gap-0 p-0 sm:max-w-md">
           <SheetHeader className="px-6 py-5 border-b">
-            <SheetTitle>{isNew ? "New Command" : "Edit Command"}</SheetTitle>
-            <SheetDescription>{isNew ? "Save a new snippet." : editingCmd?.title}</SheetDescription>
+            <SheetTitle>Edit Command</SheetTitle>
+            <SheetDescription>{editingCmd?.title}</SheetDescription>
           </SheetHeader>
 
           <div className="flex flex-col gap-5 px-6 py-5 flex-1 overflow-y-auto">
@@ -326,27 +305,22 @@ const Commands = () => {
           </div>
 
           <div className="px-6 py-4 border-t flex items-center justify-between gap-2">
-            {!isNew && (
-              <>
-                {!confirmDelete ? (
-                  <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setConfirmDelete(true)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                ) : (
-                  <div className="flex items-center gap-1">
-                    <span className="text-xs text-destructive">Delete?</span>
-                    <Button size="sm" variant="destructive" onClick={handleDelete}>Yes</Button>
-                    <Button size="sm" variant="outline" onClick={() => setConfirmDelete(false)}>No</Button>
-                  </div>
-                )}
-              </>
+            {!confirmDelete ? (
+              <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setConfirmDelete(true)}>
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            ) : (
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-destructive">Delete?</span>
+                <Button size="sm" variant="destructive" onClick={handleDelete}>Yes</Button>
+                <Button size="sm" variant="outline" onClick={() => setConfirmDelete(false)}>No</Button>
+              </div>
             )}
-            {isNew && <div />}
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setOpenSheet(false)}>Cancel</Button>
               <Button onClick={handleSave} disabled={saving || !fTitle.trim() || !fCommand.trim() || !resolvedCategory}>
                 {saving && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />}
-                {isNew ? "Create" : "Save"}
+                Save
               </Button>
             </div>
           </div>

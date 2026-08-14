@@ -1,14 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useHeaderActions } from "@/context/HeaderActionsContext";
 import { cn } from "@/lib/utils";
-import { useNotes, useCreateNote, useUpdateNote, useDeleteNote } from "@/hooks/queries/useNotes";
+import { useNotes, useUpdateNote, useDeleteNote } from "@/hooks/queries/useNotes";
 import { toast } from "sonner";
 import type { NoteType } from "@/types/noteType";
 import { timeSince } from "@/utils/getRelativeTime";
 import { ArrowLeft, Eye, EyeOff, Loader2, Plus, Search, StickyNote, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -34,13 +33,11 @@ const proseClass = [
 ].join(" ");
 
 const Notes = () => {
-  const { setOnCreate } = useHeaderActions();
+  const navigate = useNavigate();
 
   const { data: notes = [], isError } = useNotes();
-  const createNoteMutation = useCreateNote();
   const updateNoteMutation = useUpdateNote();
   const deleteNoteMutation = useDeleteNote();
-  const creating = createNoteMutation.isPending;
   const saving = updateNoteMutation.isPending;
 
   const [selectedNote, setSelectedNote] = useState<NoteType | null>(null);
@@ -69,15 +66,6 @@ const Notes = () => {
     setTimeout(() => textareaRef.current?.focus(), 50);
   };
 
-  const handleCreateNote = async () => {
-    try {
-      const created = await createNoteMutation.mutateAsync({ title: "Untitled", content: "" });
-      selectNote(created);
-    } catch {
-      toast.error("Failed to create note.");
-    }
-  };
-
   useEffect(() => { selectedNoteRef.current = selectedNote; }, [selectedNote]);
 
   useEffect(() => {
@@ -95,11 +83,6 @@ const Notes = () => {
       queueMicrotask(() => selectNote(match));
     }
   }, [notes, location.state]);
-
-  useEffect(() => {
-    setOnCreate?.(() => handleCreateNote());
-    return () => setOnCreate?.(undefined);
-  }, [setOnCreate]);
 
   const filteredNotes = notes.filter((n) =>
     n.title.toLowerCase().includes(search.toLowerCase())
@@ -172,8 +155,8 @@ const Notes = () => {
               className="pl-8 h-8 text-sm"
             />
           </div>
-          <Button size="icon" variant="outline" className="h-8 w-8 shrink-0" onClick={handleCreateNote} disabled={creating}>
-            {creating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
+          <Button size="icon" variant="outline" className="h-8 w-8 shrink-0" onClick={() => navigate("/notes/new")}>
+            <Plus className="h-3.5 w-3.5" />
           </Button>
         </div>
 
@@ -220,8 +203,8 @@ const Notes = () => {
           <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
             <StickyNote className="h-12 w-12 opacity-20" />
             <p className="text-sm">Select a note or create a new one</p>
-            <Button variant="outline" size="sm" onClick={handleCreateNote} disabled={creating}>
-              {creating ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Plus className="h-3.5 w-3.5 mr-1" />}
+            <Button variant="outline" size="sm" onClick={() => navigate("/notes/new")}>
+              <Plus className="h-3.5 w-3.5 mr-1" />
               New Note
             </Button>
           </div>

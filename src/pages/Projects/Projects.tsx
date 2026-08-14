@@ -1,104 +1,30 @@
 import { useEffect, useState } from "react";
-import { useAuth } from "@/context/AuthContext";
-import { useHeaderActions } from "@/context/HeaderActionsContext";
 import {
   useProjects,
-  useCreateProject,
   useDeleteProject,
   useUpdateProject,
 } from "@/hooks/queries/useProjects";
-import type { ProjectRequest } from "@/types/projectType";
 
 import PageContainer from "@/layouts/PageContainer";
-import Modal from "@/components/ui/Modal";
 import NoData from "@/components/ui/NoData";
 import ProjectCard from "@/components/ui/ProjectCard";
-import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
 import { toast } from "sonner";
-
-import type { Priority, Status } from "@/types/PriorityAndStatusType";
 
 const TABS = ["Active", "Archived"] as const;
 type Tab = (typeof TABS)[number];
 
 const Projects = () => {
-  const { user } = useAuth();
-  const { setOnCreate } = useHeaderActions();
-
   const { data: projects = [], isError } = useProjects();
-  const createProjectMutation = useCreateProject();
   const deleteProjectMutation = useDeleteProject();
   const updateProjectMutation = useUpdateProject();
 
   const [activeTab, setActiveTab] = useState<Tab>("Active");
-  const [openModal, setOpenModal] = useState(false);
-
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [imgUrl] = useState("");
-  const [priority, setPriority] = useState<Priority>("LOW");
-  const [status, setStatus] = useState<Status>("PENDING");
-  const [dueDate, setDueDate] = useState<Date | null>(null);
-  const creating = createProjectMutation.isPending;
 
   useEffect(() => {
     if (isError) toast.error("Failed to load projects.");
   }, [isError]);
-
-  useEffect(() => {
-    setOnCreate?.(() => setOpenModal(true));
-    return () => setOnCreate?.(undefined);
-  }, [setOnCreate]);
-
-  const handleClose = () => {
-    setOpenModal(false);
-    setTitle("");
-    setDescription("");
-    setPriority("LOW");
-    setStatus("PENDING");
-    setDueDate(null);
-  };
-
-  const handleCreate = async () => {
-    if (!title.trim() || !user?.id) return;
-
-    const newProject: ProjectRequest = {
-      title: title.trim(),
-      description: description.trim(),
-      imageUrl: imgUrl || undefined,
-      ownerId: user.id,
-      memberIds: [],
-      priority,
-      status,
-      dueDate: dueDate ? dueDate.toISOString() : undefined,
-    };
-
-    try {
-      await createProjectMutation.mutateAsync(newProject);
-      toast.success("Project created successfully!");
-      handleClose();
-    } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { message?: string; title?: string } } })
-          ?.response?.data?.message ??
-        (err as { response?: { data?: { message?: string; title?: string } } })
-          ?.response?.data?.title ??
-        "Failed to create project. Please try again.";
-      toast.error(msg);
-    }
-  };
 
   const handleDelete = async (id: string) => {
     try {
@@ -194,96 +120,6 @@ const Projects = () => {
           <NoData resource={activeTab === "Archived" ? "Archived Projects" : "Projects"} />
         </div>
       )}
-
-      <Modal
-        open={openModal}
-        onOpenChange={handleClose}
-        title="Create new Project"
-        description="Fill in the details below to create a new project."
-        className="max-w-4xl w-full"
-        footer={
-          <div className="flex gap-2 ml-auto">
-            <Button variant="outline" onClick={handleClose} disabled={creating}>Cancel</Button>
-            <Button onClick={handleCreate} disabled={creating || !title.trim()}>
-              {creating && <Loader2 className="animate-spin h-4 w-4 mr-1" />}
-              Create
-            </Button>
-          </div>
-        }
-      >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-h-[70vh] overflow-y-auto">
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="title">Title</Label>
-              <Input
-                id="title"
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Enter project title"
-              />
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Enter project description"
-              />
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="dueDate">Due Date</Label>
-              <Input
-                id="dueDate"
-                type="date"
-                value={dueDate ? dueDate.toISOString().split("T")[0] : ""}
-                onChange={(e) =>
-                  setDueDate(e.target.value ? new Date(e.target.value) : null)
-                }
-              />
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="priority">Priority</Label>
-              <Select
-                value={priority}
-                onValueChange={(val) => setPriority(val as Priority)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select priority" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="LOW">Low</SelectItem>
-                  <SelectItem value="MEDIUM">Medium</SelectItem>
-                  <SelectItem value="HIGH">High</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="status">Status</Label>
-              <Select
-                value={status}
-                onValueChange={(val) => setStatus(val as Status)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="PENDING">Pending</SelectItem>
-                  <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                  <SelectItem value="COMPLETED">Completed</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </div>
-      </Modal>
     </PageContainer>
   );
 };

@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import PriorityBadge from "@/components/ui/PriorityBadge";
+import MetaField from "@/components/ui/MetaField";
 import { Loader2, Trash2, Calendar, User, Tag, AlertCircle, Pencil } from "lucide-react";
 import { updateTask, deleteTask } from "@/services/taskService";
 import type { TaskType } from "@/types/taskType";
@@ -50,24 +51,6 @@ const priorityLabel: Record<string, string> = {
   MEDIUM: "Medium",
   HIGH: "High",
 };
-
-const MetaField = ({
-  icon: Icon,
-  label,
-  children,
-}: {
-  icon: React.ElementType;
-  label: string;
-  children: React.ReactNode;
-}) => (
-  <div className="flex flex-col gap-1.5">
-    <div className="flex items-center gap-1.5">
-      <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{label}</span>
-    </div>
-    {children}
-  </div>
-);
 
 const proseClass = [
   "prose prose-sm dark:prose-invert max-w-none text-sm text-foreground",

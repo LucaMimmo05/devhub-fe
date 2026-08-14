@@ -20,12 +20,18 @@ import ResetPassword from "@/pages/Authentication/ResetPassword";
 import NotFound from "@/pages/NotFound/NotFound";
 import ProjectDetails from "@/pages/ProjectDetails/ProjectDetails";
 import { projectDetailsLoader } from "@/pages/ProjectDetails/projectDetailsUtils";
+import NewProject from "@/pages/Projects/NewProject";
+import NewNote from "@/pages/Notes/NewNote";
+import NewCommand from "@/pages/Commands/NewCommand";
+import NewTask from "@/pages/ProjectDetails/NewTask";
 
 export type RouteHandle<TData = unknown> = {
   title?: string | ((params: Record<string, string>, data?: TData) => string);
   header?: {
     showSearch?: boolean;
     actions?: string[];
+    /** Path the "add" header action navigates to. */
+    createPath?: string;
   };
 };
 
@@ -61,7 +67,7 @@ const router = createBrowserRouter([
         element: <Projects />,
         handle: {
           title: "Projects",
-          header: { showSearch: true, actions: ["add"] },
+          header: { showSearch: true, actions: ["add"], createPath: "/projects/new" },
         } satisfies RouteHandle,
       },
       {
@@ -101,7 +107,7 @@ const router = createBrowserRouter([
         element: <Notes />,
         handle: {
           title: "Notes",
-          header: { showSearch: true, actions: ["add"] },
+          header: { showSearch: true, actions: ["add"], createPath: "/notes/new" },
         } satisfies RouteHandle,
       },
       {
@@ -109,7 +115,7 @@ const router = createBrowserRouter([
         element: <Commands />,
         handle: {
           title: "Commands",
-          header: { showSearch: true },
+          header: { showSearch: true, actions: ["add"], createPath: "/commands/new" },
         } satisfies RouteHandle,
       },
       {
@@ -120,6 +126,38 @@ const router = createBrowserRouter([
         } satisfies RouteHandle,
       },
     ],
+  },
+  {
+    path: "projects/new",
+    element: (
+      <PrivateRoute>
+        <NewProject />
+      </PrivateRoute>
+    ),
+  },
+  {
+    path: "notes/new",
+    element: (
+      <PrivateRoute>
+        <NewNote />
+      </PrivateRoute>
+    ),
+  },
+  {
+    path: "commands/new",
+    element: (
+      <PrivateRoute>
+        <NewCommand />
+      </PrivateRoute>
+    ),
+  },
+  {
+    path: "projects/:projectId/tasks/new",
+    element: (
+      <PrivateRoute>
+        <NewTask />
+      </PrivateRoute>
+    ),
   },
   { path: "*", element: <NotFound /> },
 ]);

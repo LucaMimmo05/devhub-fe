@@ -9,33 +9,17 @@ import {
 } from "@/components/ui/card";
 import PageContainer from "@/layouts/PageContainer";
 import { Separator } from "@/components/ui/separator";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
-import Modal from "@/components/ui/Modal";
-import { ArrowRight, Plus, FolderGit2, Loader2, Construction, FolderKanban, ListChecks, FileText, Terminal, Calendar, Users } from "lucide-react";
+import { ArrowRight, Plus, FolderGit2, Construction, FolderKanban, ListChecks, FileText, Terminal, Calendar, Users } from "lucide-react";
 import Task from "@/components/ui/Task";
 import QuickNote from "@/components/ui/QuickNote";
 import PriorityBadge from "@/components/ui/PriorityBadge";
 import { useEffect, useState } from "react";
-import { useProjects, useCreateProject } from "@/hooks/queries/useProjects";
+import { useProjects } from "@/hooks/queries/useProjects";
 import { useMyTasks } from "@/hooks/queries/useTasks";
-import { useNotes, useCreateNote } from "@/hooks/queries/useNotes";
-import { useCommands, useCreateCommand } from "@/hooks/queries/useCommands";
-import { CATEGORIES } from "@/types/commandType";
+import { useNotes } from "@/hooks/queries/useNotes";
+import { useCommands } from "@/hooks/queries/useCommands";
 import type { TaskType } from "@/types/taskType";
-import type { Priority, Status } from "@/types/PriorityAndStatusType";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/context/AuthContext";
-import { useHeaderActions } from "@/context/HeaderActionsContext";
-import { toast } from "sonner";
 
 const statusLabel: Record<string, string> = {
   PENDING: "Pending",
@@ -51,17 +35,12 @@ const priorityLabel: Record<string, string> = {
 };
 
 const Dashboard = () => {
-  const { user } = useAuth();
-  const { setOnCreateProject, setOnCreateNote, setOnCreateCommand } = useHeaderActions();
   const navigate = useNavigate();
 
   const { data: projects } = useProjects();
   const { data: tasks } = useMyTasks();
   const { data: notes } = useNotes();
   const { data: commands } = useCommands();
-  const createProjectMutation = useCreateProject();
-  const createNoteMutation = useCreateNote();
-  const createCommandMutation = useCreateCommand();
 
   const previewProjects = projects?.slice(0, 3) ?? [];
   const recentTasks = tasks?.slice(0, 5) ?? [];
@@ -79,85 +58,6 @@ const Dashboard = () => {
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
   }, []);
-
-  // Project modal
-  const [openProject, setOpenProject] = useState(false);
-  const [projectTitle, setProjectTitle] = useState("");
-  const [projectDesc, setProjectDesc] = useState("");
-  const [projectPriority, setProjectPriority] = useState<Priority>("LOW");
-  const [projectStatus] = useState<Status>("PENDING");
-  const [projectDueDate, setProjectDueDate] = useState("");
-  const creatingProject = createProjectMutation.isPending;
-
-  // Note modal
-  const [openNote, setOpenNote] = useState(false);
-  const [noteTitle, setNoteTitle] = useState("");
-  const [noteContent, setNoteContent] = useState("");
-  const creatingNote = createNoteMutation.isPending;
-
-  // Command modal
-  const [openCommand, setOpenCommand] = useState(false);
-  const [cmdTitle, setCmdTitle] = useState("");
-  const [cmdValue, setCmdValue] = useState("");
-  const [cmdDesc, setCmdDesc] = useState("");
-  const [cmdCategory, setCmdCategory] = useState("Bash");
-  const creatingCommand = createCommandMutation.isPending;
-
-  // Registra i modal opener nel context (singola freccia — i ref non sono setState)
-  useEffect(() => {
-    setOnCreateProject?.(() => setOpenProject(true));
-    setOnCreateNote?.(() => setOpenNote(true));
-    setOnCreateCommand?.(() => setOpenCommand(true));
-    return () => {
-      setOnCreateProject?.(undefined);
-      setOnCreateNote?.(undefined);
-      setOnCreateCommand?.(undefined);
-    };
-  }, [setOnCreateProject, setOnCreateNote, setOnCreateCommand]);
-
-  const handleCreateProject = async () => {
-    if (!projectTitle.trim() || !user?.id) return;
-    try {
-      await createProjectMutation.mutateAsync({
-        title: projectTitle.trim(),
-        description: projectDesc.trim(),
-        ownerId: user.id,
-        memberIds: [],
-        priority: projectPriority,
-        status: projectStatus,
-        dueDate: projectDueDate || undefined,
-      });
-      toast.success("Project created!");
-      setOpenProject(false);
-      setProjectTitle(""); setProjectDesc(""); setProjectDueDate("");
-    } catch {
-      toast.error("Failed to create project.");
-    }
-  };
-
-  const handleCreateNote = async () => {
-    if (!noteTitle.trim()) return;
-    try {
-      await createNoteMutation.mutateAsync({ title: noteTitle.trim(), content: noteContent });
-      toast.success("Note created!");
-      setOpenNote(false);
-      setNoteTitle(""); setNoteContent("");
-    } catch {
-      toast.error("Failed to create note.");
-    }
-  };
-
-  const handleCreateCommand = async () => {
-    if (!cmdTitle.trim() || !cmdValue.trim()) return;
-    try {
-      await createCommandMutation.mutateAsync({ title: cmdTitle.trim(), command: cmdValue.trim(), description: cmdDesc, category: cmdCategory });
-      toast.success("Command saved!");
-      setOpenCommand(false);
-      setCmdTitle(""); setCmdValue(""); setCmdDesc(""); setCmdCategory("Bash");
-    } catch {
-      toast.error("Failed to save command.");
-    }
-  };
 
   return (
     <PageContainer className="flex flex-col gap-6 w-full xl:h-full xl:overflow-hidden">
@@ -300,7 +200,7 @@ const Dashboard = () => {
                 )}
               </CardContent>
               <CardFooter className="pt-1 pb-2 shrink-0">
-                <Button variant="link" size="sm" className="cursor-pointer flex items-center gap-1 p-0" onClick={() => setOpenNote(true)}>
+                <Button variant="link" size="sm" className="cursor-pointer flex items-center gap-1 p-0" onClick={() => navigate("/notes/new")}>
                   <Plus size={14} /> New Note
                 </Button>
               </CardFooter>
@@ -328,119 +228,6 @@ const Dashboard = () => {
           </CardFooter>
         </Card>
       </div>
-
-      {/* Modale — Nuovo progetto */}
-      <Modal
-        open={openProject}
-        onOpenChange={(v) => { setOpenProject(v); if (!v) { setProjectTitle(""); setProjectDesc(""); setProjectDueDate(""); } }}
-        title="Create new Project"
-        className="max-w-lg"
-        footer={
-          <div className="flex gap-2 ml-auto">
-            <Button variant="outline" onClick={() => setOpenProject(false)} disabled={creatingProject}>Cancel</Button>
-            <Button onClick={handleCreateProject} disabled={creatingProject || !projectTitle.trim()}>
-              {creatingProject && <Loader2 className="animate-spin h-4 w-4 mr-1" />} Create
-            </Button>
-          </div>
-        }
-      >
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="p-title">Title</Label>
-            <Input id="p-title" value={projectTitle} onChange={(e) => setProjectTitle(e.target.value)} placeholder="Project title" autoFocus />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="p-desc">Description</Label>
-            <Textarea id="p-desc" value={projectDesc} onChange={(e) => setProjectDesc(e.target.value)} placeholder="Short description" />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col gap-2">
-              <Label>Priority</Label>
-              <Select value={projectPriority} onValueChange={(v) => setProjectPriority(v as Priority)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="LOW">Low</SelectItem>
-                  <SelectItem value="MEDIUM">Medium</SelectItem>
-                  <SelectItem value="HIGH">High</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="p-due">Due Date</Label>
-              <Input id="p-due" type="date" value={projectDueDate} onChange={(e) => setProjectDueDate(e.target.value)} />
-            </div>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Modale — Nuova nota */}
-      <Modal
-        open={openNote}
-        onOpenChange={(v) => { setOpenNote(v); if (!v) { setNoteTitle(""); setNoteContent(""); } }}
-        title="Create new Note"
-        className="max-w-lg"
-        footer={
-          <div className="flex gap-2 ml-auto">
-            <Button variant="outline" onClick={() => setOpenNote(false)} disabled={creatingNote}>Cancel</Button>
-            <Button onClick={handleCreateNote} disabled={creatingNote || !noteTitle.trim()}>
-              {creatingNote && <Loader2 className="animate-spin h-4 w-4 mr-1" />} Create
-            </Button>
-          </div>
-        }
-      >
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="n-title">Title</Label>
-            <Input id="n-title" value={noteTitle} onChange={(e) => setNoteTitle(e.target.value)} placeholder="Note title" autoFocus />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="n-content">Content</Label>
-            <Textarea id="n-content" value={noteContent} onChange={(e) => setNoteContent(e.target.value)} placeholder="Write your note..." className="min-h-28" />
-          </div>
-        </div>
-      </Modal>
-
-      {/* Modale — Nuovo comando */}
-      <Modal
-        open={openCommand}
-        onOpenChange={(v) => { setOpenCommand(v); if (!v) { setCmdTitle(""); setCmdValue(""); setCmdDesc(""); setCmdCategory("Bash"); } }}
-        title="Save new Command"
-        className="max-w-lg"
-        footer={
-          <div className="flex gap-2 ml-auto">
-            <Button variant="outline" onClick={() => setOpenCommand(false)} disabled={creatingCommand}>Cancel</Button>
-            <Button onClick={handleCreateCommand} disabled={creatingCommand || !cmdTitle.trim() || !cmdValue.trim()}>
-              {creatingCommand && <Loader2 className="animate-spin h-4 w-4 mr-1" />} Save
-            </Button>
-          </div>
-        }
-      >
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="c-title">Title</Label>
-            <Input id="c-title" value={cmdTitle} onChange={(e) => setCmdTitle(e.target.value)} placeholder="e.g. Start dev server" autoFocus />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="c-cmd">Command</Label>
-            <Input id="c-cmd" value={cmdValue} onChange={(e) => setCmdValue(e.target.value)} placeholder="e.g. npm run dev" className="font-mono" />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col gap-2">
-              <Label>Category</Label>
-              <Select value={cmdCategory} onValueChange={setCmdCategory}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="c-desc">Description</Label>
-              <Input id="c-desc" value={cmdDesc} onChange={(e) => setCmdDesc(e.target.value)} placeholder="Optional" />
-            </div>
-          </div>
-        </div>
-      </Modal>
     </PageContainer>
   );
 };
