@@ -95,14 +95,14 @@ const ProjectCard = ({ project, onDelete, onArchive, onUnarchive }: ProjectProps
           <div className="flex flex-row gap-4 items-center min-w-0">
             {project.imageUrl ? (
               <img
-                className="rounded-lg shrink-0"
+                className="rounded-lg shrink-0 w-14 h-14 sm:w-20 sm:h-20 object-cover"
                 width={80}
                 height={80}
                 src={project.imageUrl}
                 alt={project.title}
               />
             ) : (
-              <div className="rounded-lg bg-muted flex items-center justify-center shrink-0 w-20 h-20 text-2xl font-bold text-muted-foreground">
+              <div className="rounded-lg bg-muted flex items-center justify-center shrink-0 w-14 h-14 sm:w-20 sm:h-20 text-xl sm:text-2xl font-bold text-muted-foreground">
                 {project.title.charAt(0).toUpperCase()}
               </div>
             )}
@@ -162,9 +162,9 @@ const ProjectCard = ({ project, onDelete, onArchive, onUnarchive }: ProjectProps
         <CardFooter className="flex-col">
           <Separator />
           <div className="flex justify-between items-center w-full">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <Calendar size={16} />
-              <p className="text-muted-foreground text-sm">
+              <p className="text-muted-foreground text-sm whitespace-nowrap">
                 {project?.dueDate
                   ? new Date(project.dueDate).toLocaleDateString("en-GB", {
                       day: "2-digit",
@@ -177,10 +177,13 @@ const ProjectCard = ({ project, onDelete, onArchive, onUnarchive }: ProjectProps
             <Button
               variant="link"
               size="sm"
-              className="hover:bg-inset cursor-pointer px-2 ml-auto"
+              className="hover:bg-inset cursor-pointer px-2 ml-auto min-w-0"
               onClick={() => navigate(`/projects/${project.id}`)}
             >
-              Go To {project.title}
+              <span className="truncate">
+                <span className="sm:hidden">Open</span>
+                <span className="hidden sm:inline">Go To {project.title}</span>
+              </span>
               <ArrowRight size={16} />
             </Button>
           </div>
