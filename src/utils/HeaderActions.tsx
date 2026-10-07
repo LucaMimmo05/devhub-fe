@@ -22,8 +22,10 @@ export const getHeaderActions = (
   addDropdown: (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button>
-          Create New <ChevronDown className="ml-1" size={16} />
+        <Button aria-label="Create new">
+          <Plus className="sm:hidden" />
+          <span className="hidden sm:inline">Create New</span>
+          <ChevronDown className="ml-1 hidden sm:block" size={16} />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">

@@ -16,6 +16,7 @@ import {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarGroupContent,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -67,6 +68,11 @@ const AppSidebar = () => {
   ];
 
   const { logout, user } = useAuth();
+  const { isMobile, setOpenMobile } = useSidebar();
+  // In drawer mode, close the drawer once a destination is picked.
+  const closeDrawer = () => {
+    if (isMobile) setOpenMobile(false);
+  };
   return (
     <Sidebar className="fixed h-screen w-48 border-r transition-all duration-300">
       <SidebarHeader
@@ -93,7 +99,7 @@ const AppSidebar = () => {
               {workspaceItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <NavLink to={item.url} className="flex items-center gap-3">
+                    <NavLink to={item.url} onClick={closeDrawer} className="flex items-center gap-3">
                       <item.icon className="h-5 w-5" />
                       <span>{item.title}</span>
                     </NavLink>
@@ -109,7 +115,7 @@ const AppSidebar = () => {
               {utilitiesItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <NavLink to={item.url} className="flex items-center gap-3">
+                    <NavLink to={item.url} onClick={closeDrawer} className="flex items-center gap-3">
                       <item.icon className="h-5 w-5" />
                       <span>{item.title}</span>
                     </NavLink>
@@ -141,7 +147,7 @@ const AppSidebar = () => {
   "
               >
                 <DropdownMenuItem asChild>
-                  <NavLink to="/settings">Settings</NavLink>
+                  <NavLink to="/settings" onClick={closeDrawer}>Settings</NavLink>
                 </DropdownMenuItem>
 
                 <DropdownMenuItem

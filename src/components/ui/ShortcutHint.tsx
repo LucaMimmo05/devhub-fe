@@ -6,7 +6,7 @@ const isMac =
 
 const ShortcutHint = () => {
   return (
-    <div className="sm:flex hidden items-center gap-1 ml-auto">
+    <div className="md:flex hidden items-center gap-1 ml-auto">
       <kbd className="h-5 min-w-5 px-1 flex items-center justify-center rounded border bg-muted text-muted-foreground">
         {isMac ? (
           <Command size={12} className="translate-y-[0.5px]" />
