@@ -1,6 +1,7 @@
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
+import { TableKit } from "@tiptap/extension-table";
 import { Markdown } from "tiptap-markdown";
 import { cn } from "@/lib/utils";
 
@@ -20,6 +21,14 @@ const proseClass = [
   "[&_a]:text-primary [&_a]:underline [&_a]:cursor-pointer",
   "[&_hr]:border-border [&_hr]:my-6",
   "[&_strong]:font-semibold",
+  // GFM tables: preflight strips all table styling, so restore borders/padding here.
+  // Wide tables scroll inside their own wrapper instead of widening the page.
+  "[&_.tableWrapper]:overflow-x-auto [&_.tableWrapper]:mb-4",
+  "[&_table]:w-full [&_table]:border-collapse [&_table]:text-sm [&_table]:my-0",
+  "[&_th]:border [&_th]:border-border [&_th]:bg-muted/50 [&_th]:px-3 [&_th]:py-2 [&_th]:text-left [&_th]:font-semibold [&_th]:align-top",
+  "[&_td]:border [&_td]:border-border [&_td]:px-3 [&_td]:py-2 [&_td]:align-top",
+  "[&_th_p]:mb-0 [&_td_p]:mb-0",
+  "[&_.selectedCell]:bg-primary/10",
   "[&_p.is-editor-empty:first-child::before]:content-[attr(data-placeholder)] [&_p.is-editor-empty:first-child::before]:text-muted-foreground/40 [&_p.is-editor-empty:first-child::before]:float-left [&_p.is-editor-empty:first-child::before]:h-0 [&_p.is-editor-empty:first-child::before]:pointer-events-none",
 ].join(" ");
 
@@ -35,6 +44,7 @@ const MarkdownEditor = ({ content, onChange, placeholder, autoFocus, className }
   const editor = useEditor({
     extensions: [
       StarterKit,
+      TableKit.configure({ table: { resizable: false } }),
       Placeholder.configure({ placeholder: placeholder ?? "Start writing..." }),
       Markdown.configure({ html: false, transformPastedText: true }),
     ],
