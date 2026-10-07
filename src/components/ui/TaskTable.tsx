@@ -66,98 +66,145 @@ const TaskTable = ({
   }
 
   return (
-    <div className={cn("rounded-md", hasBorder && "border border-border")}>
-      <Table className="min-w-[540px]">
-        <colgroup>
-          {(hasCheckbok || onGoToProject) && <col style={{ width: "44px" }} />}
-          <col />
-          <col style={{ width: "120px" }} />
-          <col style={{ width: "100px" }} />
-          <col style={{ width: "110px" }} />
-          {hasAssignedTo && <col style={{ width: "120px" }} />}
-          {hasProject && <col style={{ width: "130px" }} />}
-        </colgroup>
-        <TableHeader>
-          <TableRow>
-            {header.map((head) => (
-              <TableHead key={head.id}>{head.label}</TableHead>
-            ))}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {data.map((task) => (
-            <TableRow
-              key={task.id}
-              className={onEdit ? "cursor-pointer" : ""}
-              onClick={() => onEdit?.(task)}
-            >
-              {onGoToProject && (
-                <TableCell onClick={(e) => e.stopPropagation()}>
-                  {task.projectId ? (
-                    <button
-                      onClick={() => onGoToProject(task)}
-                      className="flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                      title={task.projectTitle ?? "Go to project"}
-                    >
-                      <FolderKanban className="h-3.5 w-3.5" />
-                    </button>
-                  ) : (
-                    <span className="inline-block h-7 w-7" />
+    <>
+      {/* Phones: one card per task instead of a table that would need sideways scrolling. */}
+      <ul className={cn("md:hidden flex flex-col divide-y divide-border rounded-md", hasBorder && "border border-border")}>
+        {data.map((task) => (
+          <li
+            key={task.id}
+            className={cn("flex items-start gap-3 p-3", onEdit && "cursor-pointer active:bg-muted/50")}
+            onClick={() => onEdit?.(task)}
+          >
+            {!onGoToProject && hasCheckbok && (
+              <div className="pt-0.5" onClick={(e) => e.stopPropagation()}>
+                <Checkbox
+                  checked={task.status === "COMPLETED"}
+                  onCheckedChange={() => onToggleComplete?.(task)}
+                />
+              </div>
+            )}
+            <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+              <p className={cn("text-sm font-medium break-words", task.status === "COMPLETED" && "line-through text-muted-foreground")}>{task.title}</p>
+              {task.description && (
+                <p className="text-xs text-muted-foreground line-clamp-2">{task.description}</p>
+              )}
+              <div className="flex flex-wrap items-center gap-1.5">
+                <PriorityBadge data={task.status}>{statusLabel[task.status] ?? task.status}</PriorityBadge>
+                <PriorityBadge data={task.priority}>{priorityLabel[task.priority] ?? task.priority}</PriorityBadge>
+              </div>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                <span>{formatDate(task.dueDate)}</span>
+                {hasAssignedTo && <span>{task.assignedToUsername ?? "Unassigned"}</span>}
+                {hasProject && task.projectTitle && <span className="truncate">{task.projectTitle}</span>}
+              </div>
+            </div>
+            {onGoToProject && task.projectId && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onGoToProject(task); }}
+                className="flex items-center justify-center h-8 w-8 shrink-0 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                title={task.projectTitle ?? "Go to project"}
+                aria-label="Go to project"
+              >
+                <FolderKanban className="h-4 w-4" />
+              </button>
+            )}
+          </li>
+        ))}
+      </ul>
+
+      <div className={cn("hidden md:block rounded-md", hasBorder && "border border-border")}>
+        <Table className="min-w-[600px] table-fixed">
+          <colgroup>
+            {(hasCheckbok || onGoToProject) && <col style={{ width: "44px" }} />}
+            <col />
+            <col style={{ width: "120px" }} />
+            <col style={{ width: "100px" }} />
+            <col style={{ width: "110px" }} />
+            {hasAssignedTo && <col style={{ width: "120px" }} />}
+            {hasProject && <col style={{ width: "130px" }} />}
+          </colgroup>
+          <TableHeader>
+            <TableRow>
+              {header.map((head) => (
+                <TableHead key={head.id}>{head.label}</TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data.map((task) => (
+              <TableRow
+                key={task.id}
+                className={onEdit ? "cursor-pointer" : ""}
+                onClick={() => onEdit?.(task)}
+              >
+                {onGoToProject && (
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    {task.projectId ? (
+                      <button
+                        onClick={() => onGoToProject(task)}
+                        className="flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                        title={task.projectTitle ?? "Go to project"}
+                      >
+                        <FolderKanban className="h-3.5 w-3.5" />
+                      </button>
+                    ) : (
+                      <span className="inline-block h-7 w-7" />
+                    )}
+                  </TableCell>
+                )}
+
+                {!onGoToProject && hasCheckbok && (
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <Checkbox
+                      checked={task.status === "COMPLETED"}
+                      onCheckedChange={() => onToggleComplete?.(task)}
+                    />
+                  </TableCell>
+                )}
+
+                <TableCell>
+                  <p className={cn("font-medium truncate", task.status === "COMPLETED" && "line-through text-muted-foreground")}>{task.title}</p>
+                  {task.description && (
+                    <p className="text-xs text-muted-foreground truncate">
+                      {task.description}
+                    </p>
                   )}
                 </TableCell>
-              )}
 
-              {!onGoToProject && hasCheckbok && (
-                <TableCell onClick={(e) => e.stopPropagation()}>
-                  <Checkbox
-                    checked={task.status === "COMPLETED"}
-                    onCheckedChange={() => onToggleComplete?.(task)}
-                  />
+                <TableCell>
+                  <PriorityBadge data={task.status}>
+                    {statusLabel[task.status] ?? task.status}
+                  </PriorityBadge>
                 </TableCell>
-              )}
 
-              <TableCell>
-                <p className={cn("font-medium truncate", task.status === "COMPLETED" && "line-through text-muted-foreground")}>{task.title}</p>
-                {task.description && (
-                  <p className="text-xs text-muted-foreground truncate">
-                    {task.description}
-                  </p>
+                <TableCell>
+                  <PriorityBadge data={task.priority}>
+                    {priorityLabel[task.priority] ?? task.priority}
+                  </PriorityBadge>
+                </TableCell>
+
+                <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                  {formatDate(task.dueDate)}
+                </TableCell>
+
+                {hasAssignedTo && (
+                  <TableCell className="text-sm text-muted-foreground truncate">
+                    {task.assignedToUsername ?? "—"}
+                  </TableCell>
                 )}
-              </TableCell>
 
-              <TableCell>
-                <PriorityBadge data={task.status}>
-                  {statusLabel[task.status] ?? task.status}
-                </PriorityBadge>
-              </TableCell>
+                {hasProject && (
+                  <TableCell className="text-sm text-muted-foreground truncate">
+                    {task.projectTitle ?? "—"}
+                  </TableCell>
+                )}
 
-              <TableCell>
-                <PriorityBadge data={task.priority}>
-                  {priorityLabel[task.priority] ?? task.priority}
-                </PriorityBadge>
-              </TableCell>
-
-              <TableCell className="text-sm text-muted-foreground">
-                {formatDate(task.dueDate)}
-              </TableCell>
-
-              {hasAssignedTo && (
-                <TableCell className="text-sm text-muted-foreground truncate">
-                  {task.assignedToUsername ?? "—"}
-                </TableCell>
-              )}
-
-              {hasProject && (
-                <TableCell className="text-sm text-muted-foreground truncate">
-                  {task.projectTitle ?? "—"}
-                </TableCell>
-              )}
-
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </>
   );
 };
 
