@@ -8,6 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import PageContainer from "@/layouts/PageContainer";
+import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
 import { ArrowRight, Plus, FolderGit2, Construction, FolderKanban, ListChecks, FileText, Terminal, Calendar, Users } from "lucide-react";
 import Task from "@/components/ui/Task";
@@ -64,7 +65,7 @@ const Dashboard = () => {
 
       {/* Stats row + clock */}
       <div className="flex items-center gap-4 shrink-0">
-        <div className="flex items-center w-fit rounded-lg border border-border bg-card divide-x divide-border overflow-hidden">
+        <div className="grid grid-cols-2 sm:flex sm:items-center w-full sm:w-fit rounded-lg border border-border bg-card overflow-hidden gap-px bg-border sm:gap-0 sm:divide-x sm:divide-border">
           {[
             { label: "Projects", value: totalProjects, icon: FolderKanban, color: "text-blue-500", onClick: () => navigate("/projects") },
             { label: "Open Tasks", value: openTasks, icon: ListChecks, color: "text-amber-500", onClick: () => navigate("/tasks") },
@@ -74,19 +75,19 @@ const Dashboard = () => {
             <div
               key={label}
               onClick={onClick}
-              className="flex items-center gap-2 px-4 py-2 cursor-pointer hover:bg-muted/40 transition-colors"
+              className="flex items-center gap-2 px-4 py-2.5 sm:py-2 bg-card cursor-pointer hover:bg-muted/40 transition-colors min-w-0 whitespace-nowrap"
             >
               <Icon className={`h-3.5 w-3.5 shrink-0 ${color}`} />
               <span className="text-sm font-semibold">
                 {value === null ? <span className="text-muted-foreground/40">—</span> : value}
               </span>
-              <span className="text-sm text-muted-foreground">{label}</span>
+              <span className="text-sm text-muted-foreground truncate">{label}</span>
             </div>
           ))}
         </div>
 
         {/* Clock */}
-        <div className="ml-auto flex flex-col items-end gap-0.5">
+        <div className="ml-auto hidden sm:flex flex-col items-end gap-0.5 shrink-0">
           <div className="flex items-baseline gap-1 tabular-nums">
             <span className="text-2xl font-bold tracking-tight leading-none">
               {now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
@@ -105,7 +106,7 @@ const Dashboard = () => {
         <div className="xl:col-span-2 flex flex-col gap-6 xl:h-full xl:min-h-0">
 
           {/* Latest projects */}
-          <div className="shrink-0 md:flex hidden flex-col gap-2">
+          <div className="shrink-0 flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-muted-foreground">Latest projects</span>
               <Button variant="link" size="sm" className="p-0 h-auto text-xs" onClick={() => navigate("/projects")}>
@@ -113,11 +114,15 @@ const Dashboard = () => {
               </Button>
             </div>
             {previewProjects.length > 0 ? (
-              <div className="grid grid-cols-3 gap-3">
-                {previewProjects.slice(0, 3).map((project) => (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {previewProjects.slice(0, 3).map((project, index) => (
                   <div
                     key={project.id}
-                    className="flex flex-col gap-3 rounded-lg border border-border bg-card px-4 py-3 cursor-pointer hover:bg-muted/40 transition-colors min-w-0"
+                    className={cn(
+                      "flex flex-col gap-3 rounded-lg border border-border bg-card px-4 py-3 cursor-pointer hover:bg-muted/40 transition-colors min-w-0",
+                      // Two columns between sm and lg: keep the grid even.
+                      index === 2 && "sm:max-lg:hidden"
+                    )}
                     onClick={() => navigate(`/projects/${project.id}`)}
                   >
                     {/* Title row */}
@@ -133,7 +138,7 @@ const Dashboard = () => {
                       </div>
                     </div>
                     {/* Badges + meta */}
-                    <div className="flex items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="flex items-center gap-1.5">
                         <PriorityBadge data={project.priority} className="text-[10px] px-1.5 py-0.5">
                           {priorityLabel[project.priority] ?? project.priority}
@@ -173,7 +178,7 @@ const Dashboard = () => {
 
           {/* GitHub Activity + Quick Notes */}
           <div className="flex flex-row flex-wrap gap-6 w-full xl:flex-1 xl:min-h-0">
-            <Card className="flex-2 w-full sm:min-w-64 flex flex-col min-h-32 xl:h-full xl:min-h-0">
+            <Card className="flex-2 w-full sm:min-w-64 hidden sm:flex flex-col min-h-32 xl:h-full xl:min-h-0">
               <CardHeader className="pb-1 shrink-0">
                 <CardTitle className="text-base md:text-lg">GitHub Activity</CardTitle>
                 <Separator />
