@@ -80,16 +80,22 @@ export const AuthForm = ({
                 <Separator className="flex-1" />
               </div>
 
-              <div className="flex w-full gap-3">
-                <Button variant="outline" className="flex-1 gap-2">
-                  <SiGoogle className="h-4 w-4" />
-                  Google
-                </Button>
+              {/* OAuth login isn't implemented on the backend yet */}
+              <div className="w-full space-y-2">
+                <div className="flex w-full gap-3">
+                  <Button type="button" variant="outline" className="flex-1 gap-2" disabled aria-describedby="social-auth-soon">
+                    <SiGoogle className="h-4 w-4" />
+                    Google
+                  </Button>
 
-                <Button variant="outline" className="flex-1 gap-2">
-                  <SiGithub className="h-4 w-4" />
-                  GitHub
-                </Button>
+                  <Button type="button" variant="outline" className="flex-1 gap-2" disabled aria-describedby="social-auth-soon">
+                    <SiGithub className="h-4 w-4" />
+                    GitHub
+                  </Button>
+                </div>
+                <p id="social-auth-soon" className="text-center text-xs text-muted-foreground">
+                  Google and GitHub sign-in coming soon
+                </p>
               </div>
             </>
           )}
