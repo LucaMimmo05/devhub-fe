@@ -1,6 +1,7 @@
 import {
   refresh,
   login as loginService,
+  loginWithGithub as loginWithGithubService,
   logout as logoutService,
   register as registerService,
 } from "@/services/authService";
@@ -18,26 +19,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<null | User>(null);
   const initialized = useRef(false);
 
+  // Stores a session returned by /auth/login or /auth/github.
+  const startSession = (data: { accessToken: string; userProfile?: User }) => {
+    localStorage.setItem("accessToken", data.accessToken);
+
+    if (data.userProfile) {
+      localStorage.setItem("userData", JSON.stringify(data.userProfile));
+      setUser(JSON.parse(JSON.stringify(data.userProfile)));
+    }
+
+    axios.defaults.headers.common[
+      "Authorization"
+    ] = `Bearer ${data.accessToken}`;
+
+    setStatus("authenticated");
+  };
+
   const login = async (email: string, password: string) => {
     setStatus("loading");
     try {
-      const data = await loginService(email, password);
-
-      localStorage.setItem("accessToken", data.accessToken);
-
-      if (data.userProfile) {
-        localStorage.setItem("userData", JSON.stringify(data.userProfile));
-        setUser(JSON.parse(JSON.stringify(data.userProfile)));
-      }
-
-      axios.defaults.headers.common[
-        "Authorization"
-      ] = `Bearer ${data.accessToken}`;
-
-      setStatus("authenticated");
+      startSession(await loginService(email, password));
     } catch (error) {
       setStatus("unauthenticated");
       console.error("Login failed:", error);
+      throw error;
+    }
+  };
+
+  const loginWithGithub = async (code: string, state: string) => {
+    setStatus("loading");
+    try {
+      startSession(await loginWithGithubService(code, state));
+    } catch (error) {
+      setStatus("unauthenticated");
       throw error;
     }
   };
@@ -149,6 +163,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     user,
     refreshAuth,
     login,
+    loginWithGithub,
     register,
     logout,
     updateUser,
