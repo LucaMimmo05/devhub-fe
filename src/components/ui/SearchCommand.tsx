@@ -1,277 +1,326 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { Command as CommandPrimitive } from "cmdk";
+import {
+  CheckSquare,
+  Copy,
+  CornerDownLeft,
+  FileText,
+  FolderKanban,
+  Home,
+  ListChecks,
+  Plus,
+  Search,
+  Settings,
+  StickyNote,
+  Terminal,
+  type LucideIcon,
+} from "lucide-react";
 import { Command, CommandItem, CommandList } from "@/components/ui/command";
-import { getUserProject } from "@/services/projectService";
-import { getMyTasks } from "@/services/taskService";
-import { getMyNotes } from "@/services/noteService";
-import { getMyCommands } from "@/services/commandService";
-import type { ProjectType } from "@/types/projectType";
-import type { TaskType } from "@/types/taskType";
-import type { NoteType } from "@/types/noteType";
-import type { CommandType } from "@/types/commandType";
-import { CheckSquare, FileText, FolderKanban, Loader2, Search, Terminal } from "lucide-react";
-
+import { useProjects } from "@/hooks/queries/useProjects";
+import { useMyTasks } from "@/hooks/queries/useTasks";
+import { useNotes } from "@/hooks/queries/useNotes";
+import { useCommands } from "@/hooks/queries/useCommands";
+import { relativeDue } from "@/components/projects/projectUtils";
+import { stripMarkdown } from "@/utils/markdown";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
-type Results = {
-  projects: ProjectType[];
-  tasks: TaskType[];
-  notes: NoteType[];
-  commands: CommandType[];
+const PER_GROUP = 5;
+
+/** Ranks a match: title prefix beats title substring beats a hit elsewhere; 0 = no match. */
+const score = (q: string, title: string, ...rest: (string | undefined)[]) => {
+  const t = title.toLowerCase();
+  if (t.startsWith(q)) return 3;
+  if (t.includes(q)) return 2;
+  return rest.some((r) => r?.toLowerCase().includes(q)) ? 1 : 0;
 };
 
-const EMPTY: Results = { projects: [], tasks: [], notes: [], commands: [] };
+const rank = <T,>(items: T[], q: string, fields: (item: T) => [string, ...(string | undefined)[]]) =>
+  items
+    .map((item) => ({ item, s: score(q, ...fields(item)) }))
+    .filter((r) => r.s > 0)
+    .sort((a, b) => b.s - a.s)
+    .slice(0, PER_GROUP)
+    .map((r) => r.item);
 
-const statusLabel: Record<string, string> = {
-  COMPLETED: "Completed",
-  IN_PROGRESS: "In progress",
-  PENDING: "Pending",
-  TODO: "To do",
+/** Wraps the matched part of `text` in a highlight. */
+const Highlight = ({ text, q }: { text: string; q: string }) => {
+  const i = q ? text.toLowerCase().indexOf(q) : -1;
+  if (i < 0) return <>{text}</>;
+  return (
+    <>
+      {text.slice(0, i)}
+      <mark className="rounded-sm bg-primary/25 text-foreground">{text.slice(i, i + q.length)}</mark>
+      {text.slice(i + q.length)}
+    </>
+  );
 };
 
-const priorityColor: Record<string, string> = {
-  HIGH: "text-red-500",
-  MEDIUM: "text-yellow-500",
-  LOW: "text-green-500",
-};
-
-const isMac =
-  typeof navigator !== "undefined" &&
-  navigator.userAgent.toUpperCase().includes("MAC");
-
-/* ── Tiny section label ── */
-const SectionLabel = ({ children }: { children: React.ReactNode }) => (
-  <div className="px-3 pt-4 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50 select-none">
+const Group = ({ label, children }: { label: string; children: ReactNode }) => (
+  <div className="pb-1">
+    <div className="select-none px-4 pb-1 pt-3 text-[11px] font-medium text-muted-foreground/70">{label}</div>
     {children}
   </div>
+);
+
+const Item = ({
+  value,
+  icon: Icon,
+  iconNode,
+  title,
+  subtitle,
+  meta,
+  hint,
+  onSelect,
+}: {
+  value: string;
+  icon?: LucideIcon;
+  iconNode?: ReactNode;
+  title: ReactNode;
+  subtitle?: ReactNode;
+  meta?: ReactNode;
+  /** Shown on the highlighted row, e.g. "Copy" for commands. */
+  hint?: string;
+  onSelect: () => void;
+}) => (
+  <CommandItem
+    value={value}
+    onSelect={onSelect}
+    className="group mx-2 flex cursor-pointer items-center gap-3 rounded-lg px-2.5 py-2 text-sm data-[selected=true]:bg-muted"
+  >
+    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted/60 text-muted-foreground group-data-[selected=true]:bg-background/60">
+      {iconNode ?? (Icon && <Icon className="h-3.5 w-3.5" />)}
+    </span>
+    <span className="min-w-0 flex-1">
+      <span className="block truncate font-medium leading-snug">{title}</span>
+      {subtitle && <span className="block truncate text-xs leading-snug text-muted-foreground">{subtitle}</span>}
+    </span>
+    {meta && <span className="shrink-0 text-xs text-muted-foreground">{meta}</span>}
+    <span className="hidden shrink-0 items-center gap-1 text-[11px] text-muted-foreground group-data-[selected=true]:flex">
+      {hint === "Copy" ? <Copy className="h-3 w-3" /> : <CornerDownLeft className="h-3 w-3" />}
+      {hint ?? "Open"}
+    </span>
+  </CommandItem>
 );
 
 const SearchCommand = ({ onClose }: { onClose: () => void }) => {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<Results>(EMPTY);
-  const [loading, setLoading] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const q = query.trim().toLowerCase();
+
+  // Everything comes from the React Query cache the pages already fill: instant, no extra requests.
+  const { data: projects = [] } = useProjects();
+  const { data: tasks = [] } = useMyTasks();
+  const { data: notes = [] } = useNotes();
+  const { data: commands = [] } = useCommands();
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  useEffect(() => {
-    const q = query.trim();
-    if (!q) { setResults(EMPTY); setLoading(false); return; }
+  const go = (path: string) => {
+    navigate(path);
+    onClose();
+  };
 
-    setLoading(true);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
+  const copy = async (text: string, title: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success(`Copied “${title}”`);
+      onClose();
+    } catch {
+      toast.error("Couldn't copy to the clipboard.");
+    }
+  };
 
-    debounceRef.current = setTimeout(async () => {
-      try {
-        const lower = q.toLowerCase();
-        const [projects, tasks, notes, commands] = await Promise.all([
-          getUserProject().then((all: ProjectType[]) =>
-            all.filter((p) => p.title?.toLowerCase().includes(lower)).slice(0, 4)
-          ),
-          getMyTasks({ search: q }).then((r: TaskType[]) => r.slice(0, 4)),
-          getMyNotes().then((all: NoteType[]) =>
-            all
-              .filter(
-                (n) =>
-                  n.title?.toLowerCase().includes(lower) ||
-                  n.content?.toLowerCase().includes(lower)
-              )
-              .slice(0, 4)
-          ),
-          getMyCommands(undefined, q).then((r: CommandType[]) => r.slice(0, 4)),
-        ]);
-        setResults({ projects, tasks, notes, commands });
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setLoading(false);
+  const openTasks = tasks.filter((t) => t.status === "PENDING" || t.status === "IN_PROGRESS");
+
+  // A few dozen items at most: ranking on every keystroke is instant, no memoization needed.
+  const results = q
+    ? {
+        projects: rank(projects, q, (p) => [p.title, p.description]),
+        tasks: rank(tasks, q, (t) => [t.title, t.description, t.projectTitle]),
+        notes: rank(notes, q, (n) => [n.title, n.content]),
+        commands: rank(commands, q, (c) => [c.title, c.command, c.description, c.category]),
       }
-    }, 300);
+    : null;
 
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-  }, [query]);
+  const pages: { label: string; path: string; icon: LucideIcon }[] = [
+    { label: "Home", path: "/", icon: Home },
+    { label: "Projects", path: "/projects", icon: FolderKanban },
+    { label: "Tasks", path: "/tasks", icon: CheckSquare },
+    { label: "Notes", path: "/notes", icon: StickyNote },
+    { label: "Commands", path: "/commands", icon: Terminal },
+    { label: "Settings", path: "/settings", icon: Settings },
+  ];
+  const creates: { label: string; path: string; icon: LucideIcon }[] = [
+    { label: "New task", path: "/tasks/new", icon: ListChecks },
+    { label: "New note", path: "/notes/new", icon: FileText },
+    { label: "New project", path: "/projects/new", icon: FolderKanban },
+    { label: "New command", path: "/commands/new", icon: Terminal },
+  ];
+  // Actions and pages also match the query, so "new note" or "settings" work as commands.
+  const matchingActions = q ? [...creates, ...pages].filter((a) => a.label.toLowerCase().includes(q)) : [];
 
-  const go = (path: string) => { navigate(path); onClose(); };
-  const hasResults = Object.values(results).some((r) => r.length > 0);
+  const dueSoon = [...openTasks]
+    .filter((t) => t.dueDate)
+    .sort((a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime())
+    .slice(0, 4);
+
+  const taskRow = (t: (typeof tasks)[number]) => {
+    const due = relativeDue(t.dueDate, t.status);
+    return (
+      <Item
+        key={t.id}
+        value={`task-${t.id}`}
+        icon={CheckSquare}
+        title={
+          <span className={cn(t.status === "COMPLETED" && "text-muted-foreground line-through")}>
+            <Highlight text={t.title} q={q} />
+          </span>
+        }
+        subtitle={t.projectTitle}
+        meta={
+          due?.rel ? (
+            <span className={cn(due.late && "font-medium text-red-400")}>{due.rel}</span>
+          ) : t.status === "COMPLETED" ? (
+            "Done"
+          ) : undefined
+        }
+        onSelect={() => go(`/tasks?task=${t.id}`)}
+      />
+    );
+  };
+
+  const total = results
+    ? results.projects.length + results.tasks.length + results.notes.length + results.commands.length + matchingActions.length
+    : 0;
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center pt-[13vh] px-4 bg-black/50 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 px-3 pt-[10vh] backdrop-blur-sm sm:px-4 sm:pt-[13vh]"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-[540px] h-[480px] rounded-xl border border-border/60 bg-background shadow-xl overflow-hidden flex flex-col"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Search"
+        className="flex max-h-[min(560px,75vh)] w-full max-w-[600px] flex-col overflow-hidden rounded-xl border border-border/70 bg-popover shadow-2xl shadow-black/40"
         onClick={(e) => e.stopPropagation()}
       >
-      <Command shouldFilter={false} className="flex-1 flex flex-col overflow-hidden rounded-none border-none shadow-none bg-transparent">
-        {/* ── Search bar ── */}
-        <div className="flex items-center gap-3 px-4 border-b border-border/60 h-14">
-          {loading
-            ? <Loader2 className="h-4 w-4 shrink-0 text-muted-foreground animate-spin" />
-            : <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
-          }
-          <CommandPrimitive.Input
-            autoFocus
-            placeholder="Search anything…"
-            value={query}
-            onValueChange={setQuery}
-            className="flex-1 h-full bg-transparent p-0 text-sm outline-none placeholder:text-muted-foreground/50"
-          />
-        </div>
-
-        {/* ── Body ── */}
-        <CommandList className="flex-1 overflow-y-auto">
-
-          {/* Idle */}
-          {!query.trim() && (
-            <div className="py-14 text-center">
-              <p className="text-sm text-muted-foreground">
-                Search across projects, tasks, notes and commands
-              </p>
-            </div>
-          )}
-
-          {/* No results */}
-          {!loading && query.trim() && !hasResults && (
-            <div className="py-14 text-center">
-              <p className="text-sm text-muted-foreground">
-                No results for{" "}
-                <span className="text-foreground font-medium">"{query}"</span>
-              </p>
-            </div>
-          )}
-
-          {/* ── Projects ── */}
-          {results.projects.length > 0 && (
-            <>
-              <SectionLabel>Projects</SectionLabel>
-              {results.projects.map((p) => (
-                <CommandItem
-                  key={`project-${p.id}`}
-                  value={`project-${p.id}`}
-                  onSelect={() => go(`/projects/${p.id}`)}
-                  className="flex items-center gap-3 px-3 mx-1.5 py-2.5 rounded-lg cursor-pointer text-sm"
-                >
-                  <FolderKanban className="h-4 w-4 shrink-0 text-muted-foreground" />
-                  <span className="flex-1 truncate font-medium">{p.title}</span>
-                  {p.priority && (
-                    <span className={cn("text-xs font-medium shrink-0", priorityColor[p.priority])}>
-                      {p.priority}
-                    </span>
-                  )}
-                </CommandItem>
-              ))}
-            </>
-          )}
-
-          {/* ── Tasks ── */}
-          {results.tasks.length > 0 && (
-            <>
-              <SectionLabel>Tasks</SectionLabel>
-              {results.tasks.map((t) => (
-                <CommandItem
-                  key={`task-${t.id}`}
-                  value={`task-${t.id}`}
-                  onSelect={() => go("/tasks")}
-                  className="flex items-start gap-3 px-3 mx-1.5 py-2.5 rounded-lg cursor-pointer text-sm"
-                >
-                  <CheckSquare className="h-4 w-4 shrink-0 text-muted-foreground mt-px" />
-                  <div className="flex flex-col flex-1 min-w-0">
-                    <span className={cn(
-                      "font-medium truncate leading-snug",
-                      t.status === "COMPLETED" && "line-through text-muted-foreground"
-                    )}>
-                      {t.title}
-                    </span>
-                    {t.projectTitle && (
-                      <span className="text-xs text-muted-foreground truncate mt-0.5">{t.projectTitle}</span>
-                    )}
-                  </div>
-                  <span className="text-xs text-muted-foreground shrink-0 mt-px">
-                    {statusLabel[t.status] ?? t.status}
-                  </span>
-                </CommandItem>
-              ))}
-            </>
-          )}
-
-          {/* ── Notes ── */}
-          {results.notes.length > 0 && (
-            <>
-              <SectionLabel>Notes</SectionLabel>
-              {results.notes.map((n) => (
-                <CommandItem
-                  key={`note-${n.id}`}
-                  value={`note-${n.id}`}
-                  onSelect={() => go("/notes")}
-                  className="flex items-start gap-3 px-3 mx-1.5 py-2.5 rounded-lg cursor-pointer text-sm"
-                >
-                  <FileText className="h-4 w-4 shrink-0 text-muted-foreground mt-px" />
-                  <div className="flex flex-col flex-1 min-w-0">
-                    <span className="font-medium truncate leading-snug">
-                      {n.title || "Untitled"}
-                    </span>
-                    {n.content && (
-                      <span className="text-xs text-muted-foreground truncate mt-0.5">
-                        {n.content.replace(/[#*`>\-_[\]()]/g, "").trim().slice(0, 80)}
-                      </span>
-                    )}
-                  </div>
-                </CommandItem>
-              ))}
-            </>
-          )}
-
-          {/* ── Commands ── */}
-          {results.commands.length > 0 && (
-            <>
-              <SectionLabel>Commands</SectionLabel>
-              {results.commands.map((c) => (
-                <CommandItem
-                  key={`cmd-${c.id}`}
-                  value={`cmd-${c.id}`}
-                  onSelect={() => go("/commands")}
-                  className="flex items-start gap-3 px-3 mx-1.5 py-2.5 rounded-lg cursor-pointer text-sm"
-                >
-                  <Terminal className="h-4 w-4 shrink-0 text-muted-foreground mt-px" />
-                  <div className="flex flex-col flex-1 min-w-0">
-                    <span className="font-medium truncate leading-snug">{c.title}</span>
-                    <span className="text-xs text-muted-foreground font-mono truncate mt-0.5">{c.command}</span>
-                  </div>
-                  <span className="text-xs text-muted-foreground shrink-0 mt-px">{c.category}</span>
-                </CommandItem>
-              ))}
-            </>
-          )}
-
-          {/* bottom padding */}
-          {hasResults && <div className="h-2" />}
-        </CommandList>
-      </Command>
-
-        {/* ── Footer ── */}
-        <div className="flex items-center justify-between border-t border-border/60 px-4 py-2 text-[11px] text-muted-foreground/60 shrink-0">
-          <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1.5">
-              <kbd className="rounded border bg-muted px-1.5 py-0.5 font-mono text-[10px]">↑↓</kbd>
-              navigate
-            </span>
-            <span className="flex items-center gap-1.5">
-              <kbd className="rounded border bg-muted px-1.5 py-0.5 font-mono text-[10px]">↵</kbd>
-              open
-            </span>
+        <Command shouldFilter={false} loop className="flex min-h-0 flex-1 flex-col rounded-none border-none bg-transparent shadow-none">
+          <div className="flex h-14 shrink-0 items-center gap-3 border-b border-border/60 px-4">
+            <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <CommandPrimitive.Input
+              autoFocus
+              placeholder="Search projects, tasks, notes, commands… or type an action"
+              value={query}
+              onValueChange={setQuery}
+              className="h-full flex-1 bg-transparent p-0 text-[15px] outline-none placeholder:text-muted-foreground/50"
+            />
+            <kbd className="hidden rounded border border-border bg-muted px-1.5 py-0.5 font-sans text-[10px] text-muted-foreground sm:block">Esc</kbd>
           </div>
+
+          <CommandList className="max-h-none min-h-0 flex-1 overflow-y-auto pb-2">
+            {!results ? (
+              <>
+                <Group label="Create">
+                  {creates.map((a) => (
+                    <Item key={a.path} value={a.path} icon={Plus} title={a.label} onSelect={() => go(a.path)} />
+                  ))}
+                </Group>
+                {dueSoon.length > 0 && (
+                  <Group label="Coming up">
+                    {dueSoon.map(taskRow)}
+                  </Group>
+                )}
+                <Group label="Go to">
+                  {pages.map((p) => (
+                    <Item key={p.path} value={`page-${p.path}`} icon={p.icon} title={p.label} onSelect={() => go(p.path)} />
+                  ))}
+                </Group>
+              </>
+            ) : total === 0 ? (
+              <div className="px-6 py-14 text-center">
+                <p className="text-sm text-muted-foreground">
+                  Nothing matches <span className="font-medium text-foreground">“{query.trim()}”</span>
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground/70">Search looks in titles, descriptions, note text and commands.</p>
+              </div>
+            ) : (
+              <>
+                {matchingActions.length > 0 && (
+                  <Group label="Actions">
+                    {matchingActions.map((a) => (
+                      <Item key={a.path} value={`action-${a.path}`} icon={a.icon} title={<Highlight text={a.label} q={q} />} onSelect={() => go(a.path)} />
+                    ))}
+                  </Group>
+                )}
+                {results.tasks.length > 0 && <Group label="Tasks">{results.tasks.map(taskRow)}</Group>}
+                {results.projects.length > 0 && (
+                  <Group label="Projects">
+                    {results.projects.map((p) => (
+                      <Item
+                        key={p.id}
+                        value={`project-${p.id}`}
+                        icon={FolderKanban}
+                        title={<Highlight text={p.title} q={q} />}
+                        subtitle={p.description}
+                        meta={p.status === "ARCHIVED" ? "Archived" : undefined}
+                        onSelect={() => go(`/projects/${p.id}`)}
+                      />
+                    ))}
+                  </Group>
+                )}
+                {results.notes.length > 0 && (
+                  <Group label="Notes">
+                    {results.notes.map((n) => (
+                      <Item
+                        key={n.id}
+                        value={`note-${n.id}`}
+                        iconNode={n.emoji ? <span className="text-sm leading-none">{n.emoji}</span> : <FileText className="h-3.5 w-3.5" />}
+                        title={<Highlight text={n.title || "Untitled"} q={q} />}
+                        subtitle={n.content ? stripMarkdown(n.content).slice(0, 120) : undefined}
+                        onSelect={() => go(`/notes/${n.id}`)}
+                      />
+                    ))}
+                  </Group>
+                )}
+                {results.commands.length > 0 && (
+                  <Group label="Commands">
+                    {results.commands.map((c) => (
+                      <Item
+                        key={c.id}
+                        value={`cmd-${c.id}`}
+                        icon={Terminal}
+                        title={<Highlight text={c.title} q={q} />}
+                        subtitle={<span className="font-mono">{c.command}</span>}
+                        meta={c.category}
+                        hint="Copy"
+                        onSelect={() => copy(c.command, c.title)}
+                      />
+                    ))}
+                  </Group>
+                )}
+              </>
+            )}
+          </CommandList>
+        </Command>
+
+        <div className="hidden shrink-0 items-center gap-4 border-t border-border/60 px-4 py-2 text-[11px] text-muted-foreground/70 sm:flex">
           <span className="flex items-center gap-1.5">
-            <kbd className="rounded border bg-muted px-1.5 py-0.5 font-mono text-[10px]">
-              {isMac ? "⌘K" : "Ctrl+K"}
-            </kbd>
-            close
+            <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-sans text-[10px]">↑↓</kbd> move
+          </span>
+          <span className="flex items-center gap-1.5">
+            <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-sans text-[10px]">↵</kbd> open · copy commands
+          </span>
+          <span className="ml-auto flex items-center gap-1.5">
+            <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-sans text-[10px]">Esc</kbd> close
           </span>
         </div>
       </div>
