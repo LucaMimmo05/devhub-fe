@@ -58,7 +58,7 @@ const project = (
 });
 
 const projects: ProjectType[] = [
-  project("1", "DevHub", "Personal developer dashboard: projects, tasks, notes", "IN_PROGRESS", "HIGH", 18, 3),
+  { ...project("1", "DevHub", "Personal developer dashboard: projects, tasks, notes", "IN_PROGRESS", "HIGH", 18, 3), githubRepo: "lucamimmo/devhub-fe" },
   project("2", "Billing service", "Stripe webhooks and invoice generation for the SaaS", "IN_PROGRESS", "HIGH", 6, 4),
   project("3", "Portfolio v3", "Rewrite in Astro with case studies", "PENDING", "MEDIUM", 41, 1),
   project("4", "CLI toolkit", "Small Go utilities for daily scripts", "IN_PROGRESS", "LOW", null, 2),
@@ -182,6 +182,109 @@ let commands: CommandType[] = [
 const b64 = (o: object) => btoa(JSON.stringify(o)).replace(/=+$/, "");
 const fakeToken = `${b64({ alg: "none" })}.${b64({ sub: user.id, exp: Math.floor(Date.now() / 1000) + 365 * 24 * 3600 })}.mock`;
 
+
+// ── GitHub (mock) ─────────────────────────────────────────────────────────────
+let githubConnected = true;
+
+const ghRepo = (
+  id: number, name: string, description: string, language: string, stars: number, forks: number,
+  issues: number, pushedDaysAgo: number, extra: Partial<Record<string, unknown>> = {}
+) => ({
+  id, name, fullName: `lucamimmo/${name}`, owner: "lucamimmo", description, isPrivate: false, fork: false,
+  archived: false, language, stars, forks, watchers: Math.max(1, Math.round(stars / 4)), openIssues: issues,
+  defaultBranch: "main", htmlUrl: `https://github.com/lucamimmo/${name}`, homepage: null, topics: [],
+  pushedAt: at(-pushedDaysAgo, 15), updatedAt: at(-pushedDaysAgo, 15), createdAt: at(-400 + id * 20),
+  sizeKb: 1200 + id * 300, license: "MIT", ...extra,
+});
+
+const ghRepos = [
+  ghRepo(1, "devhub-fe", "Frontend for DevHub: React 19, TanStack Query, Tailwind", "TypeScript", 42, 6, 3, 0, { topics: ["react", "tailwind", "dashboard"], homepage: "https://devhub.example.dev" }),
+  ghRepo(2, "devhub-be", "DevHub REST API: Quarkus, PostgreSQL, JWT", "Java", 31, 4, 2, 0, { topics: ["quarkus", "java", "api"] }),
+  ghRepo(3, "billing-service", "Stripe webhooks and invoice generation", "Go", 12, 1, 5, 2, { isPrivate: true }),
+  ghRepo(4, "cli-toolkit", "Small Go utilities for daily scripts", "Go", 87, 9, 1, 6),
+  ghRepo(5, "portfolio", "Personal site, built with Astro", "Astro", 5, 0, 0, 21),
+  ghRepo(6, "dotfiles", "zsh, neovim, tmux", "Shell", 19, 3, 0, 40),
+  ghRepo(7, "old-blog", "Jekyll blog, kept for redirects", "HTML", 2, 0, 0, 700, { archived: true }),
+];
+
+const commitMessages = [
+  "feat(github): connect accounts with OAuth",
+  "fix(notes): flush pending edits before closing",
+  "refactor(tasks): share TaskRow between pages",
+  "feat(search): command palette with actions",
+  "chore(deps): bump vite to 7.2",
+  "fix(api): return fresh timestamps from updates",
+  "docs: explain the GitHub OAuth setup",
+  "feat(projects): inline editing on the project page",
+];
+
+const ghCommits = (repo: string, n: number, offset = 0) =>
+  Array.from({ length: n }, (_, i) => {
+    const sha = (Math.abs(Math.sin((i + offset + repo.length) * 9301)) * 1e16).toString(16).padStart(14, "0").slice(0, 40).padEnd(40, "a");
+    return {
+      sha, shortSha: sha.slice(0, 7), message: commitMessages[(i + offset) % commitMessages.length], repo,
+      authorLogin: "lucamimmo", authorName: "Luca Mimmo", authorAvatarUrl: null,
+      date: new Date(Date.now() - (i * 7 + offset * 3 + 1) * 3600 * 1000).toISOString(),
+      htmlUrl: `https://github.com/${repo}/commit/${sha}`,
+    };
+  });
+
+// A year of contributions with a weekday rhythm and a few hot streaks, deterministic per day.
+const ghContributions = () => {
+  const today = new Date();
+  const start = new Date(today);
+  start.setDate(start.getDate() - 364 - start.getDay());
+  const weeks: { days: { date: string; count: number; level: number }[] }[] = [];
+  let total = 0;
+  for (let d = new Date(start); d <= today; d.setDate(d.getDate() + 1)) {
+    if (d.getDay() === 0) weeks.push({ days: [] });
+    const seed = Math.abs(Math.sin(d.getTime() / 8.64e7) * 10000) % 1;
+    const weekday = d.getDay() > 0 && d.getDay() < 6;
+    const count = seed < (weekday ? 0.25 : 0.65) ? 0 : Math.round(seed * (weekday ? 14 : 5));
+    total += count;
+    const level = count === 0 ? 0 : count < 3 ? 1 : count < 6 ? 2 : count < 10 ? 3 : 4;
+    if (!weeks.length) weeks.push({ days: [] });
+    weeks[weeks.length - 1].days.push({ date: d.toISOString().slice(0, 10), count, level });
+  }
+  return { total, weeks };
+};
+
+const githubRoute = (method: string, seg: string[]): [number, unknown] | null => {
+  if (seg[0] === "auth" && seg[1] === "github") return [503, { message: "Mock mode: GitHub sign-in needs a real OAuth app." }];
+  if (seg[0] !== "github") return null;
+  const status = githubConnected
+    ? { configured: true, connected: true, login: "lucamimmo", name: "Luca Mimmo", avatarUrl: null, profileUrl: "https://github.com/lucamimmo", connectedAt: at(-3) }
+    : { configured: true, connected: false, login: null, name: null, avatarUrl: null, profileUrl: null, connectedAt: null };
+  if (seg[1] === "status") return [200, status];
+  if (seg[1] === "connection" && method === "delete") { githubConnected = false; return [204, null]; }
+  if (seg[1] === "connect") return [503, { message: "Mock mode: connecting needs a real OAuth app." }];
+  if (!githubConnected) return [409, { message: "Connect your GitHub account first." }];
+  if (seg[1] === "repos" && seg[2]) {
+    const repo = ghRepos.find((r) => r.fullName === `${seg[2]}/${seg[3]}`);
+    if (!repo) return [404, { message: "Not found on GitHub, or your account can't access it." }];
+    return [200, {
+      repo,
+      languages: repo.language === "TypeScript" ? { TypeScript: 412000, CSS: 18000, HTML: 3100, JavaScript: 2400 } : { [repo.language]: 220000, Dockerfile: 1800, Shell: 900 },
+      commits: ghCommits(repo.fullName, 12),
+      issues: Array.from({ length: repo.openIssues }, (_, i) => ({
+        number: 40 - i * 3, title: ["Dark mode flicker on first load", "Contribution graph should respect week start", "Add pagination to repositories", "Rate limit message is unclear", "Support GitLab too?"][i % 5],
+        state: "open", authorLogin: ["giulia-r", "tkowalski", "amara-o"][i % 3], authorAvatarUrl: null,
+        labels: [[{ name: "bug", color: "d73a4a" }], [{ name: "enhancement", color: "a2eeef" }], [{ name: "good first issue", color: "7057ff" }, { name: "ui", color: "fbca04" }]][i % 3],
+        comments: i * 2, createdAt: at(-(i + 1) * 4), updatedAt: at(-i), htmlUrl: `${repo.htmlUrl}/issues/${40 - i * 3}`,
+      })),
+      pulls: repo.openIssues > 1 ? [
+        { number: 41, title: "feat: GitHub integration", authorLogin: "lucamimmo", authorAvatarUrl: null, draft: false, createdAt: at(0, 9), htmlUrl: `${repo.htmlUrl}/pull/41` },
+        { number: 38, title: "WIP: move settings into tabs", authorLogin: "giulia-r", authorAvatarUrl: null, draft: true, createdAt: at(-5), htmlUrl: `${repo.htmlUrl}/pull/38` },
+      ] : [],
+    }];
+  }
+  if (seg[1] === "repos") return [200, ghRepos];
+  if (seg[1] === "commits") return [200, [...ghCommits("lucamimmo/devhub-fe", 8), ...ghCommits("lucamimmo/devhub-be", 5, 3), ...ghCommits("lucamimmo/cli-toolkit", 3, 9)]
+    .sort((a, b) => b.date.localeCompare(a.date))];
+  if (seg[1] === "contributions") return [200, ghContributions()];
+  return null;
+};
+
 const body = (config: InternalAxiosRequestConfig) => {
   if (!config.data) return {};
   return typeof config.data === "string" ? JSON.parse(config.data) : config.data;
@@ -193,6 +296,9 @@ const route = (config: InternalAxiosRequestConfig): [number, unknown] => {
   const seg = path.split("/").filter(Boolean);
   const data = body(config);
   const now = new Date().toISOString();
+
+  const gh = githubRoute(method, seg);
+  if (gh) return gh;
 
   // Auth
   if (seg[0] === "auth") {
