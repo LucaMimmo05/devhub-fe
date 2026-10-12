@@ -23,6 +23,8 @@ export type TaskRequest = {
   status?: Status;
   priority?: Priority;
   dueDate?: string;
+  /** Updates only: removes the due date (a missing dueDate leaves it unchanged). */
+  clearDueDate?: boolean;
   projectId?: string;
   assignedToProfileId?: string;
 };

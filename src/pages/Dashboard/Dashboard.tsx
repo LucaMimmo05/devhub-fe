@@ -1,238 +1,278 @@
-import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Link, useNavigate } from "react-router-dom";
+import { useMemo, useState } from "react";
+import { differenceInCalendarDays, format } from "date-fns";
+import { CheckCircle2, FileText, FolderGit2 } from "lucide-react";
 import PageContainer from "@/layouts/PageContainer";
 import { cn } from "@/lib/utils";
-import { Separator } from "@/components/ui/separator";
-import { ArrowRight, Plus, FolderGit2, Construction, FolderKanban, ListChecks, FileText, Terminal, Calendar, Users } from "lucide-react";
 import Task from "@/components/ui/Task";
+import TaskModal from "@/components/ui/TaskModal";
 import QuickNote from "@/components/ui/QuickNote";
 import PriorityBadge from "@/components/ui/PriorityBadge";
-import { useEffect, useState } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
+import DashboardSection, { SectionEmpty, SectionRowsSkeleton } from "@/components/ui/DashboardSection";
+import { useAuth } from "@/context/AuthContext";
 import { useProjects } from "@/hooks/queries/useProjects";
 import { useMyTasks } from "@/hooks/queries/useTasks";
 import { useNotes } from "@/hooks/queries/useNotes";
 import { useCommands } from "@/hooks/queries/useCommands";
 import type { TaskType } from "@/types/taskType";
-import { useNavigate } from "react-router-dom";
 
 const statusLabel: Record<string, string> = {
   PENDING: "Pending",
-  IN_PROGRESS: "In Progress",
+  IN_PROGRESS: "In progress",
   COMPLETED: "Completed",
   ARCHIVED: "Archived",
 };
 
-const priorityLabel: Record<string, string> = {
-  LOW: "Low",
-  MEDIUM: "Medium",
-  HIGH: "High",
+const MAX_TASKS = 10;
+const MAX_PROJECTS = 5;
+const MAX_NOTES = 5;
+
+const greeting = (hour: number) =>
+  hour < 5 ? "Good evening" : hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+
+const isOpen = (t: TaskType) => t.status === "PENDING" || t.status === "IN_PROGRESS";
+const daysUntil = (d?: string) => (d ? differenceInCalendarDays(new Date(d), new Date()) : null);
+
+type TaskGroup = { label: string; tasks: TaskType[]; tone?: "danger" };
+
+// Open tasks bucketed by urgency, capped at MAX_TASKS rows overall.
+const groupTasks = (tasks: TaskType[]): TaskGroup[] => {
+  const open = tasks
+    .filter(isOpen)
+    .sort((a, b) => {
+      if (!a.dueDate) return 1;
+      if (!b.dueDate) return -1;
+      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+    })
+    .slice(0, MAX_TASKS);
+
+  const groups: TaskGroup[] = [
+    { label: "Overdue", tasks: [], tone: "danger" },
+    { label: "Today", tasks: [] },
+    { label: "Upcoming", tasks: [] },
+    { label: "No due date", tasks: [] },
+  ];
+  for (const t of open) {
+    const days = daysUntil(t.dueDate);
+    if (days === null) groups[3].tasks.push(t);
+    else if (days < 0) groups[0].tasks.push(t);
+    else if (days === 0) groups[1].tasks.push(t);
+    else groups[2].tasks.push(t);
+  }
+  return groups.filter((g) => g.tasks.length > 0);
 };
+
+type Stat = {
+  label: string;
+  value: number | undefined;
+  hint?: string;
+  to: string;
+  tone?: "danger";
+};
+
+const StatTile = ({ label, value, hint, to, tone }: Stat) => (
+  <Link
+    to={to}
+    className="group flex flex-col gap-1 bg-card/60 px-4 py-3 transition-colors hover:bg-muted/50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
+  >
+    <span className="text-xs font-medium text-muted-foreground">{label}</span>
+    {value === undefined ? (
+      <Skeleton className="my-1 h-6 w-10" />
+    ) : (
+      <span
+        className={cn(
+          "text-2xl font-semibold leading-none tracking-tight tabular-nums",
+          tone === "danger" && value > 0 && "text-red-400"
+        )}
+      >
+        {value}
+      </span>
+    )}
+    <span className="truncate text-xs text-muted-foreground/80">{hint ?? " "}</span>
+  </Link>
+);
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [editingTask, setEditingTask] = useState<TaskType | null>(null);
 
-  const { data: projects } = useProjects();
-  const { data: tasks } = useMyTasks();
-  const { data: notes } = useNotes();
+  const { data: projects, isLoading: projectsLoading } = useProjects();
+  const { data: tasks, isLoading: tasksLoading } = useMyTasks();
+  const { data: notes, isLoading: notesLoading } = useNotes();
   const { data: commands } = useCommands();
 
-  const previewProjects = projects?.slice(0, 3) ?? [];
-  const recentTasks = tasks?.slice(0, 5) ?? [];
-  const recentNotes = notes?.slice(0, 3) ?? [];
+  const taskGroups = useMemo(() => groupTasks(tasks ?? []), [tasks]);
 
-  // Stats
-  const totalProjects = projects?.length ?? null;
-  const openTasks = tasks?.filter((t: TaskType) => t.status === "PENDING" || t.status === "IN_PROGRESS").length ?? null;
-  const totalNotes = notes?.length ?? null;
-  const totalCommands = commands?.length ?? null;
+  const openTasks = tasks?.filter(isOpen);
+  const inProgress = tasks?.filter((t) => t.status === "IN_PROGRESS").length ?? 0;
+  const overdue = openTasks?.filter((t) => (daysUntil(t.dueDate) ?? 0) < 0).length;
+  const dueToday = openTasks?.filter((t) => daysUntil(t.dueDate) === 0).length ?? 0;
+  const activeProjects =
+    projects?.filter((p) => p.status === "PENDING" || p.status === "IN_PROGRESS").length ?? 0;
 
-  // Clock
-  const [now, setNow] = useState(new Date());
-  useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(id);
-  }, []);
+  const now = new Date();
+  const summary =
+    openTasks === undefined
+      ? null
+      : dueToday > 0
+        ? `${dueToday} task${dueToday > 1 ? "s" : ""} due today`
+        : openTasks.length > 0
+          ? "Nothing due today"
+          : "All caught up";
+
+  const stats: Stat[] = [
+    { label: "Open tasks", value: openTasks?.length, hint: `${inProgress} in progress`, to: "/tasks" },
+    { label: "Overdue", value: overdue, hint: `${dueToday} due today`, to: "/tasks", tone: "danger" },
+    { label: "Projects", value: projects?.length, hint: `${activeProjects} active`, to: "/projects" },
+    {
+      label: "Notes",
+      value: notes?.length,
+      hint: commands ? `${commands.length} saved command${commands.length !== 1 ? "s" : ""}` : undefined,
+      to: "/notes",
+    },
+  ];
 
   return (
-    <PageContainer className="flex flex-col gap-6 w-full xl:h-full xl:overflow-hidden">
-
-      {/* Stats row + clock */}
-      <div className="flex items-center gap-4 shrink-0">
-        <div className="grid grid-cols-2 sm:flex sm:items-center w-full sm:w-fit rounded-lg border border-border bg-card overflow-hidden gap-px bg-border sm:gap-0 sm:divide-x sm:divide-border">
-          {[
-            { label: "Projects", value: totalProjects, icon: FolderKanban, color: "text-blue-500", onClick: () => navigate("/projects") },
-            { label: "Open Tasks", value: openTasks, icon: ListChecks, color: "text-amber-500", onClick: () => navigate("/tasks") },
-            { label: "Notes", value: totalNotes, icon: FileText, color: "text-emerald-500", onClick: () => navigate("/notes") },
-            { label: "Commands", value: totalCommands, icon: Terminal, color: "text-violet-500", onClick: () => navigate("/commands") },
-          ].map(({ label, value, icon: Icon, color, onClick }) => (
-            <div
-              key={label}
-              onClick={onClick}
-              className="flex items-center gap-2 px-4 py-2.5 sm:py-2 bg-card cursor-pointer hover:bg-muted/40 transition-colors min-w-0 whitespace-nowrap"
-            >
-              <Icon className={`h-3.5 w-3.5 shrink-0 ${color}`} />
-              <span className="text-sm font-semibold">
-                {value === null ? <span className="text-muted-foreground/40">—</span> : value}
-              </span>
-              <span className="text-sm text-muted-foreground truncate">{label}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* Clock */}
-        <div className="ml-auto hidden sm:flex flex-col items-end gap-0.5 shrink-0">
-          <div className="flex items-baseline gap-1 tabular-nums">
-            <span className="text-2xl font-bold tracking-tight leading-none">
-              {now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
-            </span>
-            <span className="text-sm font-medium text-muted-foreground leading-none">
-              {now.toLocaleTimeString("en-GB", { second: "2-digit" })}
-            </span>
-          </div>
-          <span className="text-[11px] text-muted-foreground tracking-wide uppercase">
-            {now.toLocaleDateString("en-GB", { weekday: "short", day: "2-digit", month: "short" })}
-          </span>
-        </div>
+    <PageContainer className="gap-4 lg:gap-5">
+      {/* Greeting */}
+      <div className="min-w-0">
+        <h2 className="truncate text-xl font-semibold tracking-tight sm:text-2xl">
+          {greeting(now.getHours())}
+          {user?.firstName ? `, ${user.firstName}` : ""}
+        </h2>
+        <p className="mt-0.5 truncate text-sm text-muted-foreground">
+          {format(now, "EEEE d MMMM")}
+          {summary && <> · {summary}</>}
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-rows-[1fr] xl:grid-cols-3 gap-10 w-full flex-1 min-h-0">
-        <div className="xl:col-span-2 flex flex-col gap-6 xl:h-full xl:min-h-0">
+      {/* Stats: one bordered strip, cells separated by 1px gaps */}
+      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border md:grid-cols-4">
+        {stats.map((s) => (
+          <StatTile key={s.label} {...s} />
+        ))}
+      </div>
 
-          {/* Latest projects */}
-          <div className="shrink-0 flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-muted-foreground">Latest projects</span>
-              <Button variant="link" size="sm" className="p-0 h-auto text-xs" onClick={() => navigate("/projects")}>
-                View all <ArrowRight className="ml-1" size={12} />
-              </Button>
-            </div>
-            {previewProjects.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {previewProjects.slice(0, 3).map((project, index) => (
-                  <div
-                    key={project.id}
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-12">
+        {/* My tasks */}
+        <DashboardSection
+          title="My tasks"
+          count={openTasks?.length}
+          action={{ label: "View all", to: "/tasks" }}
+          className="lg:col-span-7 xl:col-span-8"
+        >
+          {tasksLoading ? (
+            <SectionRowsSkeleton rows={6} />
+          ) : taskGroups.length > 0 ? (
+            <div className="flex flex-col gap-1">
+              {taskGroups.map((group) => (
+                <div key={group.label}>
+                  <p
                     className={cn(
-                      "flex flex-col gap-3 rounded-lg border border-border bg-card px-4 py-3 cursor-pointer hover:bg-muted/40 transition-colors min-w-0",
-                      // Two columns between sm and lg: keep the grid even.
-                      index === 2 && "sm:max-lg:hidden"
+                      "px-2.5 pb-0.5 pt-2 text-[11px] font-medium text-muted-foreground",
+                      group.tone === "danger" && "text-red-400/90"
                     )}
-                    onClick={() => navigate(`/projects/${project.id}`)}
                   >
-                    {/* Title row */}
-                    <div className="flex items-start gap-2.5 min-w-0">
-                      <div className="shrink-0 w-8 h-8 rounded-md bg-muted flex items-center justify-center text-sm font-bold text-muted-foreground">
-                        {project.title.charAt(0).toUpperCase()}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold truncate leading-tight">{project.title}</p>
-                        <p className="text-xs text-muted-foreground truncate mt-0.5 leading-tight">
-                          {project.description || "No description"}
-                        </p>
-                      </div>
-                    </div>
-                    {/* Badges + meta */}
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5">
-                        <PriorityBadge data={project.priority} className="text-[10px] px-1.5 py-0.5">
-                          {priorityLabel[project.priority] ?? project.priority}
-                        </PriorityBadge>
-                        <PriorityBadge data={project.status} className="text-[10px] px-1.5 py-0.5">
-                          {statusLabel[project.status] ?? project.status}
-                        </PriorityBadge>
-                      </div>
-                      <div className="flex items-center gap-2 text-muted-foreground/60 shrink-0">
-                        <div className="flex items-center gap-1">
-                          <Users className="h-3 w-3" />
-                          <span className="text-[10px]">{project.members?.length ?? 0}</span>
-                        </div>
-                        {project.dueDate && (
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            <span className="text-[10px]">
-                              {new Date(project.dueDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                    {group.label}
+                  </p>
+                  {group.tasks.map((task) => (
+                    <Task key={task.id} task={task} onClick={() => setEditingTask(task)} />
+                  ))}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <SectionEmpty
+              icon={<CheckCircle2 className="h-4 w-4" />}
+              text="No open tasks. You're all caught up."
+              cta={{ label: "New task", to: "/tasks/new" }}
+            />
+          )}
+        </DashboardSection>
+
+        {/* Side column: stacks on lg+, sits side by side on md */}
+        <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2 lg:col-span-5 lg:grid-cols-1 xl:col-span-4">
+          <DashboardSection
+            title="Projects"
+            count={projects?.length}
+            action={{ label: "View all", to: "/projects" }}
+          >
+            {projectsLoading ? (
+              <SectionRowsSkeleton rows={3} />
+            ) : projects && projects.length > 0 ? (
+              projects.slice(0, MAX_PROJECTS).map((project) => (
+                <button
+                  key={project.id}
+                  type="button"
+                  onClick={() => navigate(`/projects/${project.id}`)}
+                  className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-muted/60 focus-visible:outline-2 focus-visible:outline-ring active:bg-muted"
+                >
+                  {project.imageUrl ? (
+                    <img
+                      src={project.imageUrl}
+                      alt=""
+                      className="h-7 w-7 shrink-0 rounded-md object-cover"
+                    />
+                  ) : (
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted text-xs font-semibold text-muted-foreground">
+                      {project.title.charAt(0).toUpperCase()}
+                    </span>
+                  )}
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium leading-snug">{project.title}</span>
+                    <span className="block truncate text-xs leading-snug text-muted-foreground">
+                      {project.dueDate
+                        ? `Due ${format(new Date(project.dueDate), "d MMM")}`
+                        : project.description || "No due date"}
+                    </span>
+                  </span>
+                  <PriorityBadge data={project.status} className="px-1.5 text-[10px]">
+                    {statusLabel[project.status] ?? project.status}
+                  </PriorityBadge>
+                </button>
+              ))
             ) : (
-              <div className="flex items-center gap-2 rounded-lg border border-dashed border-border px-3 py-3">
-                <FolderGit2 className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
-                <span className="text-sm text-muted-foreground">No projects yet</span>
-                <Button size="sm" variant="outline" asChild className="ml-auto h-6 text-xs px-2">
-                  <Link to="/projects">Create</Link>
-                </Button>
-              </div>
+              <SectionEmpty
+                icon={<FolderGit2 className="h-4 w-4" />}
+                text="No projects yet"
+                cta={{ label: "Create", to: "/projects/new" }}
+              />
             )}
-          </div>
+          </DashboardSection>
 
-          {/* GitHub Activity + Quick Notes */}
-          <div className="flex flex-row flex-wrap gap-6 w-full xl:flex-1 xl:min-h-0">
-            <Card className="flex-2 w-full sm:min-w-64 hidden sm:flex flex-col min-h-32 xl:h-full xl:min-h-0">
-              <CardHeader className="pb-1 shrink-0">
-                <CardTitle className="text-base md:text-lg">GitHub Activity</CardTitle>
-                <Separator />
-              </CardHeader>
-              <CardContent className="flex flex-col flex-1 items-center justify-center pb-3 gap-1.5 text-center">
-                <Construction className="h-6 w-6 text-muted-foreground/40" />
-                <p className="text-sm font-medium text-muted-foreground">GitHub integration coming soon</p>
-                <p className="text-xs text-muted-foreground/60">Connect your GitHub account to see your repository activity here.</p>
-              </CardContent>
-            </Card>
-
-            <Card className="flex-1 w-full sm:min-w-64 flex flex-col min-h-32 xl:h-full xl:min-h-0">
-              <CardHeader className="pb-1 shrink-0">
-                <CardTitle className="text-base md:text-lg">Quick Notes</CardTitle>
-                <Separator />
-              </CardHeader>
-              <CardContent className="flex flex-col flex-1 overflow-auto px-4 py-0 pt-2 pb-0 min-h-0">
-                {recentNotes.length > 0 ? (
-                  recentNotes.map((note) => (
-                    <QuickNote key={note.id} note={note} onClick={() => navigate(`/notes/${note.id}`)} />
-                  ))
-                ) : (
-                  <p className="text-sm text-muted-foreground text-center py-4">No notes yet</p>
-                )}
-              </CardContent>
-              <CardFooter className="pt-1 pb-2 shrink-0">
-                <Button variant="link" size="sm" className="cursor-pointer flex items-center gap-1 p-0" onClick={() => navigate("/notes/new")}>
-                  <Plus size={14} /> New Note
-                </Button>
-              </CardFooter>
-            </Card>
-          </div>
+          <DashboardSection
+            title="Recent notes"
+            count={notes?.length}
+            action={{ label: "View all", to: "/notes" }}
+          >
+            {notesLoading ? (
+              <SectionRowsSkeleton rows={3} />
+            ) : notes && notes.length > 0 ? (
+              notes
+                .slice(0, MAX_NOTES)
+                .map((note) => (
+                  <QuickNote key={note.id} note={note} onClick={() => navigate(`/notes/${note.id}`)} />
+                ))
+            ) : (
+              <SectionEmpty
+                icon={<FileText className="h-4 w-4" />}
+                text="No notes yet"
+                cta={{ label: "Write one", to: "/notes/new" }}
+              />
+            )}
+          </DashboardSection>
         </div>
-
-        {/* Task recenti */}
-        <Card className="min-h-64 xl:min-h-0 flex flex-col xl:h-full">
-          <CardHeader className="shrink-0">
-            <CardTitle className="text-base md:text-lg">Recent Tasks</CardTitle>
-            <Separator />
-          </CardHeader>
-          <CardContent className="flex flex-col flex-1 overflow-auto px-4 py-0 pt-2">
-            {recentTasks.length > 0 ? (
-              recentTasks.map((task) => <Task key={task.id} task={task} />)
-            ) : (
-              <p className="text-sm text-muted-foreground text-center py-4">No tasks yet</p>
-            )}
-          </CardContent>
-          <CardFooter className="flex justify-end pt-1 pb-2 shrink-0">
-            <Button variant="link" size="sm" className="cursor-pointer flex items-center gap-1 p-0" onClick={() => navigate("/tasks")}>
-              View All Tasks <ArrowRight className="mt-0.5 ml-1" size={16} />
-            </Button>
-          </CardFooter>
-        </Card>
       </div>
+
+      <TaskModal
+        task={editingTask}
+        onClose={() => setEditingTask(null)}
+        onSaved={() => {}}
+        canAssign={false}
+        canEdit={!!user && !!editingTask?.createdByProfileId && editingTask.createdByProfileId === user.id}
+      />
     </PageContainer>
   );
 };

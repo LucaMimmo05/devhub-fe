@@ -15,6 +15,14 @@ export const queryKeys = {
     all: ["notes"] as const,
     list: () => ["notes", "list"] as const,
   },
+  github: {
+    all: ["github"] as const,
+    status: () => ["github", "status"] as const,
+    repos: () => ["github", "repos"] as const,
+    repo: (fullName: string) => ["github", "repo", fullName] as const,
+    commits: () => ["github", "commits"] as const,
+    contributions: () => ["github", "contributions"] as const,
+  },
   commands: {
     all: ["commands"] as const,
     list: (category?: string, search?: string) =>

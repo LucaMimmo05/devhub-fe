@@ -24,6 +24,7 @@ const AppLayout = () => {
   const headerActions = getHeaderActions({
     onNavigate: (path) => navigate(path),
     createPath: handle?.header?.createPath,
+    createLabel: handle?.header?.createLabel,
   });
 
   const actionIds = handle?.header?.actions ?? [];
@@ -53,8 +54,8 @@ const AppLayout = () => {
   return (
     <SidebarProvider>
       <div className="flex h-screen w-full overflow-hidden">
-        <aside className="hidden lg:block w-48 shrink-0">
-          <AppSidebar />
+        <aside className="hidden w-52 shrink-0 lg:block">
+          <AppSidebar onSearch={() => setIsSearching(true)} />
         </aside>
 
         <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -70,21 +71,6 @@ const AppLayout = () => {
             <Outlet />
           </div>
 
-          <footer className="shrink-0 border-t border-border/40 px-4 sm:px-6 py-1.5 flex items-center justify-end gap-1.5">
-            <span className="text-[11px] text-muted-foreground/35 tracking-wide uppercase font-medium">
-              Crafted by
-            </span>
-            <a
-              href="https://github.com/LucaMimmo05"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[11px] font-semibold text-muted-foreground/50 hover:text-foreground transition-colors tracking-wide"
-            >
-              Luca Mimmo
-            </a>
-            <span className="text-[11px] text-muted-foreground/25">×</span>
-            <span className="text-[11px] font-semibold text-muted-foreground/50 tracking-wide">Claude</span>
-          </footer>
 
           {isSearching && (
             <SearchCommand onClose={() => setIsSearching(false)} />

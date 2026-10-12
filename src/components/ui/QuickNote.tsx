@@ -1,38 +1,38 @@
 import { FileText } from "lucide-react";
+import { format } from "date-fns";
 import type { NoteType } from "@/types/noteType";
+import { stripMarkdown } from "@/utils/markdown";
 
 const formatDate = (d: string | null | undefined) => {
   if (!d) return "just now";
   const date = new Date(d);
   if (isNaN(date.getTime()) || date.getFullYear() < 2000) return "just now";
-  return date.toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
+  return format(date, "d MMM");
 };
 
-const stripMarkdown = (text: string) =>
-  text
-    .replace(/[#*_`~>\-]+/g, "")
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-    .replace(/\n+/g, " ")
-    .trim();
-
 const QuickNote = ({ note, onClick }: { note: NoteType; onClick?: () => void }) => (
-  <div
-    className="flex items-start gap-2.5 py-2.5 border-b border-border/50 last:border-0 group cursor-pointer"
+  <button
+    type="button"
     onClick={onClick}
+    className="flex w-full items-start gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-muted/60 focus-visible:outline-2 focus-visible:outline-ring active:bg-muted"
   >
-    <FileText className="h-3.5 w-3.5 mt-0.5 shrink-0 text-muted-foreground/60" />
-    <div className="flex-1 min-w-0">
-      <p className="text-sm font-medium truncate leading-snug">{note.title}</p>
+    {note.emoji ? (
+      <span className="w-3.5 shrink-0 text-center text-sm leading-snug" aria-hidden>{note.emoji}</span>
+    ) : (
+      <FileText className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />
+    )}
+    <span className="min-w-0 flex-1">
+      <span className="block truncate text-sm font-medium leading-snug">{note.title}</span>
       {note.content && (
-        <p className="text-xs text-muted-foreground truncate mt-0.5 leading-snug">
+        <span className="mt-0.5 block truncate text-xs leading-snug text-muted-foreground">
           {stripMarkdown(note.content)}
-        </p>
+        </span>
       )}
-    </div>
-    <span className="text-[10px] text-muted-foreground/50 shrink-0 mt-0.5">
+    </span>
+    <span className="mt-0.5 shrink-0 text-[11px] tabular-nums text-muted-foreground/70">
       {formatDate(note.updatedAt)}
     </span>
-  </div>
+  </button>
 );
 
 export default QuickNote;

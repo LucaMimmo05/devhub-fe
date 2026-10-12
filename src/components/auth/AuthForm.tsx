@@ -1,4 +1,7 @@
-import type { ReactNode } from "react";
+import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { apiErrorMessage, startGithubLogin } from "@/utils/githubAuth";
+import { useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -13,6 +16,30 @@ import { Link } from "react-router-dom";
 import { SiGithub, SiGoogle } from "react-icons/si";
 import SubmitButton from "../ui/SubmitButton";
 import { useAuth } from "@/context/AuthContext";
+
+const GithubButton = () => {
+  const [busy, setBusy] = useState(false);
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      className="w-full gap-2"
+      disabled={busy}
+      onClick={async () => {
+        setBusy(true);
+        try {
+          await startGithubLogin();
+        } catch (err) {
+          setBusy(false);
+          toast.error(apiErrorMessage(err, "GitHub sign-in isn't available right now."));
+        }
+      }}
+    >
+      {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <SiGithub className="h-4 w-4" />}
+      Continue with GitHub
+    </Button>
+  );
+};
 
 type AuthFormProps = {
   title: string;
@@ -80,22 +107,14 @@ export const AuthForm = ({
                 <Separator className="flex-1" />
               </div>
 
-              {/* OAuth login isn't implemented on the backend yet */}
               <div className="w-full space-y-2">
-                <div className="flex w-full gap-3">
-                  <Button type="button" variant="outline" className="flex-1 gap-2" disabled aria-describedby="social-auth-soon">
-                    <SiGoogle className="h-4 w-4" />
-                    Google
-                  </Button>
-
-                  <Button type="button" variant="outline" className="flex-1 gap-2" disabled aria-describedby="social-auth-soon">
-                    <SiGithub className="h-4 w-4" />
-                    GitHub
-                  </Button>
-                </div>
-                <p id="social-auth-soon" className="text-center text-xs text-muted-foreground">
-                  Google and GitHub sign-in coming soon
-                </p>
+                {/* Signs in, or creates an account already connected to GitHub */}
+                <GithubButton />
+                <Button type="button" variant="outline" className="w-full gap-2" disabled aria-describedby="google-soon">
+                  <SiGoogle className="h-4 w-4" />
+                  Google
+                </Button>
+                <p id="google-soon" className="text-center text-xs text-muted-foreground">Google sign-in coming soon</p>
               </div>
             </>
           )}

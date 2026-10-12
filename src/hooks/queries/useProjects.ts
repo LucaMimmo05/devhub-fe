@@ -40,9 +40,9 @@ export const useCreateProject = () => {
   return useMutation({
     mutationFn: createProject,
     onSuccess: (created: ProjectType) => {
-      queryClient.setQueryData<ProjectType[]>(queryKeys.projects.list(), (old) =>
-        old ? [created, ...old] : [created]
-      );
+      // Only patch a list that's already loaded (see useCreateNote), then refetch to be safe.
+      queryClient.setQueryData<ProjectType[]>(queryKeys.projects.list(), (old) => (old ? [created, ...old] : old));
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.list() });
       queryClient.setQueryData(queryKeys.projects.detail(created.id), created);
     },
   });

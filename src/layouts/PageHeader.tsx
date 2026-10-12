@@ -1,6 +1,4 @@
-import ShortcutHint from "@/components/ui/ShortcutHint";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { useAuth } from "@/context/AuthContext";
 import { Search } from "lucide-react";
 import { useLocation } from "react-router-dom";
 
@@ -19,42 +17,27 @@ const PageHeader = ({
   handleClick,
   isSearching,
 }: PageHeaderProps) => {
-  const { user } = useAuth();
   const location = useLocation();
-
-  const fullName =
-    user?.firstName && user?.lastName
-      ? `${user.firstName} ${user.lastName}`
-      : "User";
-
   const isHome = location.pathname === "/";
 
   return (
-    <header className="sticky top-0 z-20 flex h-16 w-full items-center justify-between gap-3 border-b bg-background px-4 sm:px-6">
+    <header className="sticky top-0 z-20 flex h-14 w-full shrink-0 items-center justify-between gap-3 border-b border-sidebar-border bg-background/95 px-4 backdrop-blur sm:px-6">
       <div className="flex min-w-0 items-center gap-2">
         <SidebarTrigger className="-ml-1 shrink-0 lg:hidden" />
-        <h1 className="truncate text-base font-semibold sm:text-lg">
-          {isHome ? (
-            <>
-              <span className="hidden sm:inline">Welcome back, {fullName}!</span>
-              <span className="sm:hidden">Home</span>
-            </>
-          ) : (
-            title
-          )}
+        <h1 className="truncate text-sm font-semibold sm:text-base">
+          {isHome ? "Home" : title}
         </h1>
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
+        {/* On desktop search lives in the sidebar; phones get an icon here since the sidebar is a drawer */}
         {showSearch && !isSearching && (
           <button
             onClick={handleClick}
             aria-label="Search"
-            className="flex items-center gap-2 h-9 rounded-lg border border-border bg-muted/40 hover:bg-muted transition-colors px-3 text-sm text-muted-foreground md:w-56 w-9 justify-center md:justify-start"
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-muted/40 text-muted-foreground transition-colors hover:bg-muted lg:hidden"
           >
-            <Search className="h-3.5 w-3.5 shrink-0" />
-            <span className="hidden md:inline flex-1 text-left">Search…</span>
-            <ShortcutHint />
+            <Search className="h-3.5 w-3.5" />
           </button>
         )}
         {actions}

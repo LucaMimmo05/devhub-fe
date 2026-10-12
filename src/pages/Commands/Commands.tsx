@@ -1,332 +1,205 @@
-import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
-import { useNavigate } from "react-router-dom";
-import { useCommands, useUpdateCommand, useDeleteCommand } from "@/hooks/queries/useCommands";
-import type { CommandType } from "@/types/commandType";
-import { CATEGORIES } from "@/types/commandType";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useMatch, useNavigate } from "react-router-dom";
+import { Check, Copy, Pencil, Plus, Search, Terminal, X } from "lucide-react";
 import PageContainer from "@/layouts/PageContainer";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import {
-  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
-} from "@/components/ui/sheet";
-import { Check, Copy, Loader2, Plus, Search, Terminal, Trash2, X } from "lucide-react";
+import CommandDialog from "@/components/commands/CommandDialog";
+import { allCategories, categoryDot } from "@/components/commands/commandUtils";
+import { useCommands } from "@/hooks/queries/useCommands";
+import type { CommandType } from "@/types/commandType";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-const NEW_CATEGORY_VALUE = "__new__";
+const GRID = "grid grid-cols-1 gap-3 md:grid-cols-2 2xl:grid-cols-3";
 
-const categoryColor: Record<string, string> = {
-  Bash:   "bg-yellow-500/10 text-yellow-600 border-yellow-500/20",
-  Git:    "bg-orange-500/10 text-orange-600 border-orange-500/20",
-  Docker: "bg-blue-500/10 text-blue-600 border-blue-500/20",
-  SQL:    "bg-purple-500/10 text-purple-600 border-purple-500/20",
-  NPM:    "bg-red-500/10 text-red-600 border-red-500/20",
-  Other:  "bg-muted text-muted-foreground border-border",
-};
-
-const CopyButton = ({ text }: { text: string }) => {
+const CommandCard = ({ cmd, onEdit }: { cmd: CommandType; onEdit: () => void }) => {
   const [copied, setCopied] = useState(false);
-  const handle = (e: MouseEvent) => {
-    e.stopPropagation();
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(cmd.command);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      toast.error("Couldn't copy to the clipboard.");
+    }
   };
+
   return (
-    <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={handle}>
-      {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
-    </Button>
+    <article className="group flex flex-col gap-3 rounded-xl border border-border bg-card/60 p-4 transition-colors hover:border-primary/30">
+      <header className="flex items-start gap-3">
+        <div className="min-w-0 flex-1">
+          <span className="mb-1 flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+            <span className={cn("h-1.5 w-1.5 rounded-full", categoryDot(cmd.category))} />
+            {cmd.category}
+          </span>
+          <h3 className="truncate text-sm font-semibold">{cmd.title}</h3>
+          {cmd.description && <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{cmd.description}</p>}
+        </div>
+        <button
+          type="button"
+          onClick={onEdit}
+          aria-label={`Edit "${cmd.title}"`}
+          className="-mr-1.5 -mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100"
+        >
+          <Pencil className="h-3.5 w-3.5" />
+        </button>
+      </header>
+
+      {/* The command itself is the copy button: one click, visible feedback */}
+      <button
+        type="button"
+        onClick={copy}
+        title="Click to copy"
+        aria-label={`Copy command: ${cmd.command}`}
+        className={cn(
+          "group/cmd relative mt-auto flex w-full items-start gap-2 rounded-lg border bg-background/70 px-3 py-2.5 text-left font-mono text-xs leading-relaxed transition-colors focus-visible:outline-2 focus-visible:outline-ring",
+          copied ? "border-emerald-500/50" : "border-border/60 hover:border-primary/40"
+        )}
+      >
+        <span className="select-none text-emerald-400/80" aria-hidden>$</span>
+        <code className="line-clamp-4 min-w-0 flex-1 whitespace-pre-wrap pr-14 [overflow-wrap:anywhere] text-foreground/90">{cmd.command}</code>
+        <span
+          className={cn(
+            "absolute right-2 top-2 flex items-center gap-1 rounded-md px-1.5 py-0.5 font-sans text-[11px] font-medium transition-opacity",
+            copied
+              ? "bg-emerald-500/15 text-emerald-400 opacity-100"
+              : "bg-muted text-muted-foreground opacity-100 sm:opacity-0 sm:group-hover/cmd:opacity-100 sm:group-focus-visible/cmd:opacity-100"
+          )}
+        >
+          {copied ? <><Check className="h-3 w-3" /> Copied</> : <><Copy className="h-3 w-3" /> Copy</>}
+        </span>
+      </button>
+    </article>
   );
 };
 
 const Commands = () => {
   const navigate = useNavigate();
-
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [activeCategory, setActiveCategory] = useState<string>("All");
-
-  const [editingCmd, setEditingCmd] = useState<CommandType | null>(null);
-  const [openSheet, setOpenSheet] = useState(false);
-
-  // Form state
-  const [fTitle, setFTitle] = useState("");
-  const [fCommand, setFCommand] = useState("");
-  const [fDescription, setFDescription] = useState("");
-  const [fCategory, setFCategory] = useState("Bash");
-  const [fCustomCategory, setFCustomCategory] = useState("");
-  const [confirmDelete, setConfirmDelete] = useState(false);
-
-  const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const {
-    data: commands = [],
-    isLoading: loading,
-    isError,
-  } = useCommands(activeCategory === "All" ? undefined : activeCategory, debouncedSearch || undefined);
-  const updateCommandMutation = useUpdateCommand();
-  const deleteCommandMutation = useDeleteCommand();
-  const saving = updateCommandMutation.isPending;
+  const creating = !!useMatch("/commands/new");
+  const { data: commands = [], isLoading, isError } = useCommands();
+  const [category, setCategory] = useState("All");
+  const [query, setQuery] = useState("");
+  const [editing, setEditing] = useState<CommandType | null>(null);
 
   useEffect(() => {
-    if (isError) toast.error("Failed to load commands.");
+    if (isError) toast.error("Couldn't load your commands.");
   }, [isError]);
 
-  const handleCategoryChange = (cat: string) => {
-    setActiveCategory(cat);
-  };
-
-  const handleSearchChange = (value: string) => {
-    setSearch(value);
-    if (searchTimeout.current) clearTimeout(searchTimeout.current);
-    searchTimeout.current = setTimeout(() => {
-      setDebouncedSearch(value);
-    }, 400);
-  };
-
-  // Custom categories derived from user's existing commands
-  const customCategories = useMemo(() => {
-    const defaultSet = new Set<string>(CATEGORIES);
-    const seen = new Set<string>();
-    return commands
-      .map((c) => c.category)
-      .filter((cat) => !defaultSet.has(cat) && cat && !seen.has(cat) && seen.add(cat));
+  // Only categories that have commands get a filter chip, with their counts.
+  const counts = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const c of commands) map.set(c.category, (map.get(c.category) ?? 0) + 1);
+    return map;
   }, [commands]);
+  const filterCategories = allCategories(commands.map((c) => c.category)).filter((c) => counts.has(c));
 
-  // Resolved category value for save (handles new custom input)
-  const resolvedCategory = fCategory === NEW_CATEGORY_VALUE
-    ? fCustomCategory.trim()
-    : fCategory;
-
-  const openEdit = (cmd: CommandType) => {
-    setEditingCmd(cmd);
-    setFTitle(cmd.title);
-    setFCommand(cmd.command);
-    setFDescription(cmd.description ?? "");
-    // If the command's category is custom, pre-fill the custom input
-    const isCustom = !CATEGORIES.includes(cmd.category as never);
-    setFCategory(isCustom ? NEW_CATEGORY_VALUE : cmd.category);
-    setFCustomCategory(isCustom ? cmd.category : "");
-    setConfirmDelete(false);
-    setOpenSheet(true);
-  };
-
-  const handleSave = async () => {
-    if (!editingCmd || !fTitle.trim() || !fCommand.trim() || !resolvedCategory) return;
-    try {
-      const payload = { title: fTitle, command: fCommand, description: fDescription || undefined, category: resolvedCategory };
-      await updateCommandMutation.mutateAsync({ id: editingCmd.id, data: payload });
-      toast.success("Command updated!");
-      setOpenSheet(false);
-    } catch {
-      toast.error("Failed to save command.");
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!editingCmd) return;
-    try {
-      await deleteCommandMutation.mutateAsync(editingCmd.id);
-      setOpenSheet(false);
-      toast.success("Command deleted.");
-    } catch {
-      toast.error("Failed to delete command.");
-    }
-  };
-
-  const allFilterCategories = ["All", ...CATEGORIES, ...customCategories];
+  // Client-side filtering: the list is small, and search also looks inside the command text.
+  const q = query.trim().toLowerCase();
+  const visible = commands.filter(
+    (c) =>
+      (category === "All" || c.category === category) &&
+      (!q ||
+        c.title.toLowerCase().includes(q) ||
+        c.command.toLowerCase().includes(q) ||
+        c.description?.toLowerCase().includes(q))
+  );
 
   return (
-    <PageContainer className="space-y-4">
-      {/* Search + category filters */}
-      <div className="flex flex-col gap-3">
-        <div className="relative max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search commands..."
-            className="pl-9"
-            value={search}
-            onChange={(e) => handleSearchChange(e.target.value)}
-          />
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {allFilterCategories.map((cat) => (
+    <PageContainer className="gap-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Category">
+          {["All", ...filterCategories].map((c) => (
             <button
-              key={cat}
-              onClick={() => handleCategoryChange(cat)}
+              key={c}
+              role="tab"
+              aria-selected={category === c}
+              onClick={() => setCategory(c)}
               className={cn(
-                "px-3 py-1 rounded-full text-xs font-medium border transition-colors",
-                activeCategory === cat
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "border-border text-muted-foreground hover:bg-muted"
+                "flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-ring",
+                category === c
+                  ? "border-primary/50 bg-primary/10 text-foreground"
+                  : "border-border bg-card/60 text-muted-foreground hover:text-foreground"
               )}
             >
-              {cat}
+              {c !== "All" && <span className={cn("h-1.5 w-1.5 rounded-full", categoryDot(c))} />}
+              {c}
+              <span className="tabular-nums text-muted-foreground/70">
+                {c === "All" ? commands.length : counts.get(c)}
+              </span>
             </button>
           ))}
         </div>
+
+        <label className="relative ml-auto w-full sm:w-72">
+          <span className="sr-only">Search commands</span>
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search names and commands…"
+            className="h-9 w-full rounded-lg border border-border bg-card/60 pl-8 pr-8 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          />
+          {query && (
+            <button
+              type="button"
+              onClick={() => setQuery("")}
+              aria-label="Clear search"
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </label>
       </div>
 
-      {/* Commands grid */}
-      {loading ? (
-        <div className="flex justify-center items-center h-48">
-          <Loader2 className="animate-spin h-6 w-6 text-muted-foreground" />
+      {isLoading ? (
+        <div className={GRID} aria-hidden>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="flex flex-col gap-3 rounded-xl border border-border bg-card/60 p-4">
+              <div className="h-2.5 w-12 animate-pulse rounded bg-primary/10" />
+              <div className="h-3.5 w-1/2 animate-pulse rounded bg-primary/10" />
+              <div className="h-10 animate-pulse rounded-lg bg-primary/10" />
+            </div>
+          ))}
         </div>
-      ) : commands.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-[calc(100vh-280px)] gap-4 text-center">
-          <Terminal className="h-12 w-12 text-muted-foreground/30" />
+      ) : visible.length === 0 ? (
+        <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border px-6 py-14 text-center">
+          <Terminal className="h-6 w-6 text-muted-foreground/50" />
           <div>
-            <h3 className="font-semibold text-lg">No commands yet</h3>
-            <p className="text-muted-foreground text-sm">Save your first snippet to get started.</p>
+            <p className="text-sm font-medium">{q || category !== "All" ? "No commands match" : "No commands yet"}</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {q || category !== "All"
+                ? "Search looks in names, commands and notes."
+                : "Save the commands you keep looking up, then copy them with one click."}
+            </p>
           </div>
-          <Button onClick={() => navigate("/commands/new")}>New Command</Button>
+          {!q && category === "All" && (
+            <Link
+              to="/commands/new"
+              className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 active:scale-[0.98]"
+            >
+              <Plus className="h-3.5 w-3.5" /> Save a command
+            </Link>
+          )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-          {commands.map((cmd) => (
-            <div
-              key={cmd.id}
-              className="border rounded-lg p-4 flex flex-col gap-2 hover:border-primary/40 transition-colors cursor-pointer group"
-              onClick={() => openEdit(cmd)}
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  <Badge
-                    variant="outline"
-                    className={cn("text-xs shrink-0", categoryColor[cmd.category] ?? categoryColor.Other)}
-                  >
-                    {cmd.category}
-                  </Badge>
-                  <p className="font-medium text-sm truncate">{cmd.title}</p>
-                </div>
-                <CopyButton text={cmd.command} />
-              </div>
-
-              {cmd.description && (
-                <p className="text-xs text-muted-foreground line-clamp-2">{cmd.description}</p>
-              )}
-
-              <div
-                className="bg-muted rounded-md px-3 py-2 font-mono text-xs text-foreground overflow-x-auto whitespace-nowrap"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {cmd.command}
-              </div>
-            </div>
+        <div className={GRID}>
+          {visible.map((cmd) => (
+            <CommandCard key={cmd.id} cmd={cmd} onEdit={() => setEditing(cmd)} />
           ))}
         </div>
       )}
 
-      {/* Edit sheet */}
-      <Sheet open={openSheet} onOpenChange={(open) => !open && setOpenSheet(false)}>
-        <SheetContent className="flex flex-col gap-0 p-0 sm:max-w-md">
-          <SheetHeader className="px-6 py-5 border-b">
-            <SheetTitle>Edit Command</SheetTitle>
-            <SheetDescription>{editingCmd?.title}</SheetDescription>
-          </SheetHeader>
-
-          <div className="flex flex-col gap-5 px-6 py-5 flex-1 overflow-y-auto">
-            <div className="flex flex-col gap-2">
-              <Label>Title</Label>
-              <Input value={fTitle} onChange={(e) => setFTitle(e.target.value)} placeholder="e.g. List all containers" />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label>Category</Label>
-              <Select
-                value={fCategory}
-                onValueChange={(val) => {
-                  setFCategory(val);
-                  if (val !== NEW_CATEGORY_VALUE) setFCustomCategory("");
-                }}
-              >
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                  {customCategories.length > 0 && (
-                    <>
-                      <div className="px-2 py-1.5 text-xs text-muted-foreground font-medium">Custom</div>
-                      {customCategories.map((c) => (
-                        <SelectItem key={c} value={c}>{c}</SelectItem>
-                      ))}
-                    </>
-                  )}
-                  <SelectItem value={NEW_CATEGORY_VALUE}>
-                    <span className="flex items-center gap-1.5">
-                      <Plus className="h-3 w-3" /> New category…
-                    </span>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              {fCategory === NEW_CATEGORY_VALUE && (
-                <div className="relative">
-                  <Input
-                    autoFocus
-                    value={fCustomCategory}
-                    onChange={(e) => setFCustomCategory(e.target.value)}
-                    placeholder="e.g. Kubernetes"
-                    className="pr-8"
-                  />
-                  {fCustomCategory && (
-                    <button
-                      type="button"
-                      onClick={() => setFCustomCategory("")}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label>Command</Label>
-              <Textarea
-                value={fCommand}
-                onChange={(e) => setFCommand(e.target.value)}
-                placeholder="docker ps -a"
-                rows={4}
-                className="font-mono text-sm"
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label>Description <span className="text-muted-foreground text-xs">(optional)</span></Label>
-              <Textarea
-                value={fDescription}
-                onChange={(e) => setFDescription(e.target.value)}
-                placeholder="What does this command do?"
-                rows={3}
-              />
-            </div>
-          </div>
-
-          <div className="px-6 py-4 border-t flex items-center justify-between gap-2">
-            {!confirmDelete ? (
-              <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setConfirmDelete(true)}>
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            ) : (
-              <div className="flex items-center gap-1">
-                <span className="text-xs text-destructive">Delete?</span>
-                <Button size="sm" variant="destructive" onClick={handleDelete}>Yes</Button>
-                <Button size="sm" variant="outline" onClick={() => setConfirmDelete(false)}>No</Button>
-              </div>
-            )}
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setOpenSheet(false)}>Cancel</Button>
-              <Button onClick={handleSave} disabled={saving || !fTitle.trim() || !fCommand.trim() || !resolvedCategory}>
-                {saving && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />}
-                Save
-              </Button>
-            </div>
-          </div>
-        </SheetContent>
-      </Sheet>
+      {/* /commands/new opens the same dialog on top of the list */}
+      <CommandDialog
+        open={creating || !!editing}
+        command={editing}
+        categories={allCategories(commands.map((c) => c.category))}
+        onClose={() => {
+          setEditing(null);
+          if (creating) navigate("/commands");
+        }}
+      />
     </PageContainer>
   );
 };

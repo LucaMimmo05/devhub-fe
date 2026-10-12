@@ -14,9 +14,10 @@ export const useCreateNote = () => {
   return useMutation({
     mutationFn: (note: NoteRequest) => createNote(note),
     onSuccess: (created: NoteType) => {
-      queryClient.setQueryData<NoteType[]>(queryKeys.notes.list(), (old) =>
-        old ? [created, ...old] : [created]
-      );
+      // Only patch a list that's already loaded; seeding a missing list with just
+      // the new note would hide every other note until the next refetch.
+      queryClient.setQueryData<NoteType[]>(queryKeys.notes.list(), (old) => (old ? [created, ...old] : old));
+      queryClient.invalidateQueries({ queryKey: queryKeys.notes.list() });
     },
   });
 };
