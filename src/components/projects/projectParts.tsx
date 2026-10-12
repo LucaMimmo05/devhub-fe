@@ -3,6 +3,7 @@ import type { TaskStats } from "./projectUtils";
 import { Ellipsis, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { projectAccent } from "./projectUtils";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -22,14 +23,19 @@ import {
 
 export const ProjectAvatar = ({ project, size = "md" }: { project: ProjectType; size?: "sm" | "md" }) => {
   const box = size === "md" ? "h-11 w-11 text-base" : "h-8 w-8 text-xs";
-  return project.imageUrl ? (
-    <img src={project.imageUrl} alt="" className={cn("shrink-0 rounded-lg object-cover", box)} />
-  ) : (
+  if (project.imageUrl) {
+    return <img src={project.imageUrl} alt="" className={cn("shrink-0 rounded-lg object-cover", box)} />;
+  }
+  // Initial on a tint of the project's identity colour.
+  const accent = projectAccent(project.id);
+  return (
     <span
-      className={cn(
-        "flex shrink-0 items-center justify-center rounded-lg bg-muted font-semibold text-muted-foreground",
-        box
-      )}
+      className={cn("flex shrink-0 items-center justify-center rounded-lg font-semibold ring-1 ring-inset", box)}
+      style={{
+        color: accent,
+        backgroundImage: `linear-gradient(135deg, ${accent}33, ${accent}14)`,
+        ["--tw-ring-color" as string]: `${accent}40`,
+      }}
     >
       {project.title.charAt(0).toUpperCase()}
     </span>

@@ -9,7 +9,17 @@ import {
   TaskProgress,
   type ProjectActions,
 } from "./projectParts";
-import { priorityLabel, relativeDue, statusLabel, type TaskStats } from "./projectUtils";
+import { HEALTH, priorityLabel, projectHealth, relativeDue, statusLabel, type TaskStats } from "./projectUtils";
+
+const HealthChip = ({ project, stats }: { project: ProjectType; stats?: TaskStats }) => {
+  const h = HEALTH[projectHealth(project, stats)];
+  return (
+    <span className={cn("inline-flex items-center gap-1.5 rounded-md border px-1.5 py-0.5 text-[11px] font-medium", h.className)}>
+      <span className={cn("h-1.5 w-1.5 rounded-full", h.dot)} />
+      {h.label}
+    </span>
+  );
+};
 
 // Shared column template for the header and every row. From @3xl the row becomes
 // a table (project, status, tasks, due); priority and team join from @5xl.
@@ -24,7 +34,7 @@ export const ProjectListHeader = () => (
     )}
   >
     <span>Project</span>
-    <span>Status</span>
+    <span>Health</span>
     <span className="hidden @5xl:block">Priority</span>
     <span>Tasks</span>
     <span>Due</span>
@@ -73,8 +83,8 @@ const ProjectRow = ({ project, stats, ...actions }: ProjectRowProps) => {
       </div>
 
       {/* Wide: one cell per column */}
-      <div className="hidden @3xl:block">
-        <PriorityBadge data={project.status}>{statusLabel[project.status] ?? project.status}</PriorityBadge>
+      <div className="hidden @3xl:block" title={statusLabel[project.status]}>
+        <HealthChip project={project} stats={stats} />
       </div>
       <div className="hidden @5xl:block">
         <PriorityBadge data={project.priority}>{priorityLabel[project.priority] ?? project.priority}</PriorityBadge>
@@ -89,9 +99,7 @@ const ProjectRow = ({ project, stats, ...actions }: ProjectRowProps) => {
       {/* Narrow: badges, progress and due stacked under the title */}
       <div className="mt-2.5 flex flex-col gap-2.5 pl-11 @3xl:hidden">
         <div className="flex flex-wrap items-center gap-1.5">
-          <PriorityBadge data={project.status} className="px-1.5 text-[10px]">
-            {statusLabel[project.status] ?? project.status}
-          </PriorityBadge>
+          <HealthChip project={project} stats={stats} />
           <PriorityBadge data={project.priority} className="px-1.5 text-[10px]">
             {priorityLabel[project.priority] ?? project.priority}
           </PriorityBadge>
