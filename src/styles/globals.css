@@ -147,3 +147,16 @@
 
 
 
+
+/* Wrong one-time code: a short horizontal shake (OtpInput). */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+/* Auth pages: each step rises in slightly (AuthLayout). */
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}

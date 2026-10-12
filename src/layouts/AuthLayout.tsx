@@ -1,11 +1,10 @@
 import Logo from "@/assets/Logo";
-import { Outlet, useNavigate, useLocation } from "react-router-dom";
-import PageContainer from "./PageContainer";
-import AuthHero from "@/pages/Authentication/AuthHero";
+import { Link, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useEffect } from "react";
+import AuthShowcase from "@/components/auth/AuthShowcase";
 import { useAuth } from "@/context/AuthContext";
 
-// Pagine auth accessibili anche da utenti autenticati
+// Auth pages that signed-in users can still open
 const AUTH_ONLY_PATHS = ["/auth/verify-email", "/auth/forgot-password", "/auth/reset-password"];
 
 const AuthLayout = () => {
@@ -16,15 +15,31 @@ const AuthLayout = () => {
     if (status === "authenticated" && !AUTH_ONLY_PATHS.includes(location.pathname)) {
       navigate("/", { replace: true });
     }
-  }, [status, location.pathname]);
+  }, [status, location.pathname, navigate]);
 
   return (
-    <PageContainer className="py-6 min-h-screen flex relative flex-row items-center justify-center xl:gap-64 md:gap-20 lg:gap-32 ">
-      <Logo size="sm" className="absolute top-6 left-4 sm:left-6 lg:left-8" />
-      <AuthHero />
+    <main className="grid min-h-dvh bg-background lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+      <AuthShowcase />
 
-      <Outlet />
-    </PageContainer>
+      <div className="flex min-h-dvh flex-col px-5 py-6 sm:px-10">
+        <header className="flex items-center lg:hidden">
+          <Link to="/auth/login" aria-label="DevHub">
+            <Logo size="xs" className="h-auto w-24" />
+          </Link>
+        </header>
+
+        <div className="flex flex-1 items-center justify-center py-10">
+          {/* Keyed by path so each page fades in on navigation */}
+          <div key={location.pathname} className="w-full max-w-[400px] motion-safe:animate-[rise-in_0.3s_ease-out]">
+            <Outlet />
+          </div>
+        </div>
+
+        <footer className="text-center text-xs text-muted-foreground/70">
+          DevHub · your projects, tasks and notes in one place
+        </footer>
+      </div>
+    </main>
   );
 };
 

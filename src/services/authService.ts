@@ -48,6 +48,15 @@ export const resetPassword = async (email: string, otp: string, newPassword: str
   await authApi.post(`/auth/reset-password`, { email, otp, newPassword });
 };
 
+/** Checks a reset code without consuming it, so the new-password step can follow. */
+export const verifyResetCode = async (email: string, otp: string) => {
+  await authApi.post(`/auth/verify-reset-otp`, { email, otp });
+};
+
+export const resendResetCode = async (email: string) => {
+  await authApi.post(`/auth/resend-reset-otp`, { email });
+};
+
 // "Sign in with GitHub": public, returns the same session payload as /auth/login.
 export const getGithubLoginUrl = async (): Promise<string> => (await authApi.get(`/auth/github/url`)).data.url;
 

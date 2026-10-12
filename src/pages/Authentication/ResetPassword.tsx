@@ -1,224 +1,158 @@
 import { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
+import { ArrowLeft, LockKeyhole, MailCheck } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Loader2, ArrowLeft, ShieldCheck, Mail } from "lucide-react";
-import axios from "axios";
-import { API_URL } from "@/services";
+import { resendResetCode, resetPassword, verifyResetCode } from "@/services/authService";
+import { AuthHeader, Field, FormError, PasswordInput, PasswordMeter, StepIndicator, SubmitButton } from "@/components/auth/authParts";
+import OtpInput from "@/components/auth/OtpInput";
+import ResendCode from "@/components/auth/ResendCode";
+import { OTP_LENGTH, PASSWORD_MIN, RESET_STEPS, friendlyAuthError } from "@/components/auth/authRules";
+import { apiErrorMessage } from "@/utils/githubAuth";
 
-type Step = "otp" | "password";
+type Step = "code" | "password";
 
 const ResetPassword = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const prefillEmail = (location.state as { email?: string } | null)?.email ?? "";
+  const email = (location.state as { email?: string } | null)?.email ?? "";
 
-  const [step, setStep] = useState<Step>("otp");
-  const [email] = useState(prefillEmail);
+  const [step, setStep] = useState<Step>("code");
   const [otp, setOtp] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [confirmTouched, setConfirmTouched] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [resending, setResending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (otp.length < 6) {
-      toast.error("Enter the 6-digit code.");
-      return;
-    }
+  // Reached without going through "Forgot password" (e.g. a reload): start over there.
+  if (!email) return <Navigate to="/auth/forgot-password" replace />;
+
+  const checkCode = async (code: string) => {
+    if (code.length < OTP_LENGTH || loading) return;
     setLoading(true);
+    setError(null);
     try {
-      await axios.post(`${API_URL}/auth/verify-reset-otp`, { email, otp });
+      await verifyResetCode(email, code);
       setStep("password");
-    } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        "Invalid or expired code.";
-      toast.error(msg);
+    } catch (err) {
+      setError(friendlyAuthError(apiErrorMessage(err, "That code is wrong or has expired.")));
       setOtp("");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleResetPassword = async (e: React.FormEvent) => {
+  const mismatch = confirm.length > 0 && confirm !== password;
+  const canSave = password.length >= PASSWORD_MIN && confirm === password;
+
+  const save = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (newPassword !== confirmPassword) {
-      toast.error("Passwords do not match.");
-      return;
-    }
-    if (newPassword.length < 8) {
-      toast.error("Password must be at least 8 characters.");
-      return;
-    }
+    setConfirmTouched(true);
+    if (!canSave) return;
     setLoading(true);
+    setError(null);
     try {
-      await axios.post(`${API_URL}/auth/reset-password`, { email, otp, newPassword });
-      toast.success("Password reset! You can now log in.");
-      navigate("/auth/login", { replace: true });
-    } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        "Invalid or expired code.";
-      toast.error(msg);
-      // Se il codice era sbagliato, torniamo allo step OTP
+      await resetPassword(email, otp, password);
+      toast.success("Password updated. Sign in with your new password.");
+      navigate("/auth/login", { replace: true, state: { email } });
+    } catch (err) {
+      // Most likely the code expired between the two steps: ask for a fresh one.
+      setError(friendlyAuthError(apiErrorMessage(err, "That code is no longer valid. Request a new one.")));
       setOtp("");
-      setStep("otp");
-    } finally {
+      setStep("code");
       setLoading(false);
-    }
-  };
-
-  const handleResend = async () => {
-    if (!email) return;
-    setResending(true);
-    try {
-      await axios.post(`${API_URL}/auth/resend-reset-otp`, { email });
-      toast.success("A new code has been sent to your email.");
-    } catch {
-      toast.error("Failed to resend the code. Try again.");
-    } finally {
-      setResending(false);
     }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen px-4">
-      <div className="w-full max-w-sm flex flex-col gap-6">
+    <div className="flex flex-col gap-7">
+      <StepIndicator steps={RESET_STEPS} current={step === "code" ? 1 : 2} />
 
-        {/* Step 1 — OTP */}
-        {step === "otp" && (
-          <>
-            <div className="flex flex-col items-center gap-2 text-center">
-              <div className="bg-primary/10 rounded-full p-3">
-                <Mail className="h-7 w-7 text-primary" />
-              </div>
-              <h1 className="text-2xl font-bold">Check your email</h1>
-              <p className="text-sm text-muted-foreground">
-                Enter the 6-digit code we sent to{" "}
-                <span className="font-medium text-foreground">{email || "your email"}</span>.
-              </p>
+      {step === "code" ? (
+        <>
+          <AuthHeader
+            icon={<MailCheck className="h-5 w-5" />}
+            title="Enter the code"
+            description={
+              <>
+                We sent a 6‑digit code to <span className="font-medium text-foreground">{email}</span>.
+              </>
+            }
+          />
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              checkCode(otp);
+            }}
+            className="flex flex-col gap-5"
+          >
+            <div className="flex flex-col gap-3">
+              <OtpInput
+                value={otp}
+                onChange={(v) => { setOtp(v); setError(null); }}
+                onComplete={checkCode}
+                length={OTP_LENGTH}
+                invalid={!!error}
+                disabled={loading}
+                autoFocus
+              />
+              {error && <FormError>{error}</FormError>}
+              <ResendCode onResend={() => resendResetCode(email)} />
             </div>
-
-            <form onSubmit={handleVerifyOtp} className="flex flex-col gap-4">
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="otp">Reset code</Label>
-                <Input
-                  id="otp"
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={6}
-                  placeholder="123456"
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-                  className="text-center text-lg tracking-widest"
-                  autoFocus
-                />
-              </div>
-              <Button type="submit" disabled={loading || otp.length < 6}>
-                {loading && <Loader2 className="animate-spin h-4 w-4 mr-2" />}
-                Continue
-              </Button>
-            </form>
-
-            <div className="text-center text-sm text-muted-foreground">
-              Didn't receive the code?{" "}
-              <button
-                type="button"
-                onClick={handleResend}
-                disabled={resending}
-                className="text-primary underline underline-offset-4 disabled:opacity-50"
-              >
-                {resending ? "Sending..." : "Resend"}
-              </button>
+            <SubmitButton loading={loading} disabled={otp.length < OTP_LENGTH}>Continue</SubmitButton>
+          </form>
+          <Link
+            to="/auth/forgot-password"
+            state={{ email }}
+            className="flex items-center justify-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4" /> Use a different email
+          </Link>
+        </>
+      ) : (
+        <>
+          <AuthHeader
+            icon={<LockKeyhole className="h-5 w-5" />}
+            title="Choose a new password"
+            description={<>For <span className="font-medium text-foreground">{email}</span>. You'll use it to sign in from now on.</>}
+          />
+          <form onSubmit={save} noValidate className="flex flex-col gap-4">
+            {error && <FormError>{error}</FormError>}
+            <Field id="new-password" label="New password">
+              <PasswordInput
+                id="new-password"
+                autoComplete="new-password"
+                autoFocus
+                placeholder="Create a password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <PasswordMeter password={password} min={PASSWORD_MIN} />
+            </Field>
+            <Field id="confirm-password" label="Confirm password" error={(confirmTouched || confirm.length >= password.length) && mismatch ? "Passwords don't match." : null}>
+              <PasswordInput
+                id="confirm-password"
+                autoComplete="new-password"
+                placeholder="Type it again"
+                value={confirm}
+                invalid={confirmTouched && mismatch}
+                onChange={(e) => setConfirm(e.target.value)}
+                onBlur={() => confirm && setConfirmTouched(true)}
+              />
+            </Field>
+            <div className="pt-1">
+              <SubmitButton loading={loading} disabled={!canSave}>Update password</SubmitButton>
             </div>
-
-            <Link
-              to="/auth/forgot-password"
-              className="flex items-center justify-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Use a different email
-            </Link>
-          </>
-        )}
-
-        {/* Step 2 — New password */}
-        {step === "password" && (
-          <>
-            <div className="flex flex-col items-center gap-2 text-center">
-              <div className="bg-primary/10 rounded-full p-3">
-                <ShieldCheck className="h-7 w-7 text-primary" />
-              </div>
-              <h1 className="text-2xl font-bold">Create new password</h1>
-              <p className="text-sm text-muted-foreground">
-                Choose a strong password for your account.
-              </p>
-            </div>
-
-            <form onSubmit={handleResetPassword} className="flex flex-col gap-4">
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="newPassword">New password</Label>
-                <Input
-                  id="newPassword"
-                  type="password"
-                  placeholder="At least 8 characters"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  autoFocus
-                />
-                {newPassword.length > 0 && newPassword.length < 8 && (
-                  <p className="text-xs text-destructive">Password must be at least 8 characters.</p>
-                )}
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="confirmPassword">Confirm password</Label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  placeholder="Repeat your password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className={
-                    confirmPassword.length > 0 && confirmPassword !== newPassword
-                      ? "border-destructive focus-visible:ring-destructive"
-                      : ""
-                  }
-                />
-                {confirmPassword.length > 0 && confirmPassword !== newPassword && (
-                  <p className="text-xs text-destructive">Passwords do not match.</p>
-                )}
-              </div>
-              <Button
-                type="submit"
-                disabled={
-                  loading ||
-                  !newPassword ||
-                  !confirmPassword ||
-                  newPassword.length < 8 ||
-                  newPassword !== confirmPassword
-                }
-              >
-                {loading && <Loader2 className="animate-spin h-4 w-4 mr-2" />}
-                Reset password
-              </Button>
-            </form>
-
-            <button
-              type="button"
-              onClick={() => setStep("otp")}
-              className="flex items-center justify-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back to code
-            </button>
-          </>
-        )}
-
-      </div>
+          </form>
+          <button
+            type="button"
+            onClick={() => { setStep("code"); setError(null); }}
+            className="flex items-center justify-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4" /> Back to the code
+          </button>
+        </>
+      )}
     </div>
   );
 };
