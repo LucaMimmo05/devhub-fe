@@ -23,7 +23,6 @@ import { projectDetailsLoader } from "@/pages/ProjectDetails/projectDetailsUtils
 import NewProject from "@/pages/Projects/NewProject";
 import NewNote from "@/pages/Notes/NewNote";
 import NoteDetail from "@/pages/Notes/NoteDetail";
-import NewCommand from "@/pages/Commands/NewCommand";
 import NewTask from "@/pages/ProjectDetails/NewTask";
 
 export type RouteHandle<TData = unknown> = {
@@ -33,6 +32,8 @@ export type RouteHandle<TData = unknown> = {
     actions?: string[];
     /** Path the "add" header action navigates to. */
     createPath?: string;
+    /** Text on the "add" button, e.g. "New project" (icon-only on phones). */
+    createLabel?: string;
   };
 };
 
@@ -68,7 +69,7 @@ const router = createBrowserRouter([
         element: <Projects />,
         handle: {
           title: "Projects",
-          header: { showSearch: true, actions: ["add"], createPath: "/projects/new" },
+          header: { showSearch: true, actions: ["add"], createPath: "/projects/new", createLabel: "New project" },
         } satisfies RouteHandle,
       },
       {
@@ -78,7 +79,7 @@ const router = createBrowserRouter([
           return projectDetailsLoader(args);
         },
         handle: {
-          title: "Overview",
+          title: "Projects",
           header: {
             showSearch: false,
             actions: [],
@@ -91,8 +92,8 @@ const router = createBrowserRouter([
         path: "tasks",
         element: <Tasks />,
         handle: {
-          title: "Personal Tasks",
-          header: { showSearch: true },
+          title: "Tasks",
+          header: { showSearch: true, actions: ["add"], createPath: "/tasks/new", createLabel: "New task" },
         } satisfies RouteHandle,
       },
       {
@@ -108,15 +109,35 @@ const router = createBrowserRouter([
         element: <Notes />,
         handle: {
           title: "Notes",
-          header: { showSearch: true, actions: ["add"], createPath: "/notes/new" },
+          header: { showSearch: true, actions: ["add"], createPath: "/notes/new", createLabel: "New note" },
         } satisfies RouteHandle,
+      },
+      // Notes open inside the app shell (sidebar + header), unlike the creation wizards.
+      {
+        path: "notes/new",
+        element: <NewNote />,
+        handle: { title: "Notes" } satisfies RouteHandle,
+      },
+      {
+        path: "notes/:noteId",
+        element: <NoteDetail />,
+        handle: { title: "Notes" } satisfies RouteHandle,
       },
       {
         path: "commands",
         element: <Commands />,
         handle: {
           title: "Commands",
-          header: { showSearch: true, actions: ["add"], createPath: "/commands/new" },
+          header: { showSearch: true, actions: ["add"], createPath: "/commands/new", createLabel: "New command" },
+        } satisfies RouteHandle,
+      },
+      // Same page, with the create dialog open on top of the list.
+      {
+        path: "commands/new",
+        element: <Commands />,
+        handle: {
+          title: "Commands",
+          header: { showSearch: true, actions: ["add"], createPath: "/commands/new", createLabel: "New command" },
         } satisfies RouteHandle,
       },
       {
@@ -137,26 +158,10 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "notes/new",
+    path: "tasks/new",
     element: (
       <PrivateRoute>
-        <NewNote />
-      </PrivateRoute>
-    ),
-  },
-  {
-    path: "notes/:noteId",
-    element: (
-      <PrivateRoute>
-        <NoteDetail />
-      </PrivateRoute>
-    ),
-  },
-  {
-    path: "commands/new",
-    element: (
-      <PrivateRoute>
-        <NewCommand />
+        <NewTask />
       </PrivateRoute>
     ),
   },
