@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import StepDots from "@/components/wizard/StepDots";
@@ -18,6 +18,8 @@ type Props = {
   wide?: boolean;
   /** Center content in the viewport instead of top-aligning (used by one-question-per-step flows). */
   centered?: boolean;
+  /** Side panel shown next to the steps on large screens, e.g. a live preview of what's being created. */
+  aside?: ReactNode;
 };
 
 const WizardScreen = ({
@@ -31,7 +33,19 @@ const WizardScreen = ({
   children,
   wide = false,
   centered = false,
+  aside,
 }: Props) => {
+  // Esc closes the flow, unless a popover/select inside it handled the key first.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !e.defaultPrevented) onClose();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onClose]);
+
+  const maxW = aside ? "max-w-5xl" : wide ? "max-w-2xl" : "max-w-xl";
+
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-background">
       <header className="flex shrink-0 items-center gap-3 px-6 py-4">
@@ -60,14 +74,22 @@ const WizardScreen = ({
       </header>
 
       <div className={cn("flex-1 overflow-y-auto", centered && "flex items-center")}>
-        <div className={cn("mx-auto w-full px-6", wide ? "max-w-2xl" : "max-w-xl", centered ? "py-10" : "py-6")}>
-          {children}
+        <div
+          className={cn(
+            "mx-auto w-full px-6",
+            maxW,
+            centered ? "py-10" : "py-6",
+            aside && "lg:grid lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-center lg:gap-16"
+          )}
+        >
+          <div className="min-w-0">{children}</div>
+          {aside && <aside className="hidden lg:block">{aside}</aside>}
         </div>
       </div>
 
       {footer && (
         <footer className="shrink-0 border-t border-border bg-background px-6 py-4">
-          <div className={cn("mx-auto flex w-full items-center justify-between gap-2", wide ? "max-w-2xl" : "max-w-xl")}>
+          <div className={cn("mx-auto flex w-full items-center justify-between gap-2", maxW)}>
             {footer}
           </div>
         </footer>

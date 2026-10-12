@@ -33,6 +33,8 @@ export type ProjectRequest = {
   status: Status;
   priority: Priority;
   dueDate?: string;
+  /** Updates only: removes the due date (a missing dueDate leaves it unchanged). */
+  clearDueDate?: boolean;
   ownerId: string;
   memberIds?: string[];
 };
