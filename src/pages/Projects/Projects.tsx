@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { FolderGit2, LayoutGrid, List, Search, X } from "lucide-react";
+import { ArrowUpDown, FolderGit2, LayoutGrid, List, Search, X } from "lucide-react";
 import {
   useProjects,
   useDeleteProject,
@@ -10,13 +10,32 @@ import {
 import PageContainer from "@/layouts/PageContainer";
 import ProjectCard, { ProjectCardSkeleton } from "@/components/ui/ProjectCard";
 import ProjectRow, { ProjectListHeader } from "@/components/projects/ProjectRow";
-import { taskStats } from "@/components/projects/projectUtils";
+import ProjectsOverview from "@/components/projects/ProjectsOverview";
+import { InlinePicker } from "@/components/projects/InlineEdit";
+import { projectHealth, taskStats, type Health } from "@/components/projects/projectUtils";
+import type { ProjectType } from "@/types/projectType";
 import { useProjectsTasks } from "@/hooks/queries/useTasks";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-const TABS = ["Active", "Archived"] as const;
+const TABS = ["Active", "Completed", "Archived"] as const;
 type Tab = (typeof TABS)[number];
+
+const inTab: Record<Tab, (p: ProjectType) => boolean> = {
+  Active: (p) => p.status === "PENDING" || p.status === "IN_PROGRESS",
+  Completed: (p) => p.status === "COMPLETED",
+  Archived: (p) => p.status === "ARCHIVED",
+};
+
+type Sort = "attention" | "deadline" | "progress" | "updated" | "name";
+const SORTS: { value: Sort; label: string }[] = [
+  { value: "attention", label: "Needs attention" },
+  { value: "deadline", label: "Deadline" },
+  { value: "progress", label: "Progress" },
+  { value: "updated", label: "Recently updated" },
+  { value: "name", label: "Name" },
+];
+const HEALTH_RANK: Record<Health, number> = { overdue: 0, "at-risk": 1, idle: 2, "on-track": 3, done: 4 };
 
 type View = "grid" | "list";
 const VIEW_KEY = "devhub.projects.view";
@@ -39,6 +58,7 @@ const Projects = () => {
 
   const [activeTab, setActiveTab] = useState<Tab>("Active");
   const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<Sort>("attention");
   const [view, setView] = useState<View>(readView);
 
   const changeView = (v: View) => {
@@ -107,20 +127,31 @@ const Projects = () => {
     }
   };
 
-  const counts: Record<Tab, number> = {
-    Active: projects.filter((p) => p.status !== "ARCHIVED").length,
-    Archived: projects.filter((p) => p.status === "ARCHIVED").length,
+  const counts = Object.fromEntries(TABS.map((t) => [t, projects.filter(inTab[t]).length])) as Record<Tab, number>;
+  const statsFor = (id: string) => taskStats(tasksByProject.get(id));
+  const progress = (p: ProjectType) => {
+    const st = statsFor(p.id);
+    return st?.total ? st.done / st.total : 0;
+  };
+  const compare: Record<Sort, (a: ProjectType, b: ProjectType) => number> = {
+    attention: (a, b) =>
+      HEALTH_RANK[projectHealth(a, statsFor(a.id))] - HEALTH_RANK[projectHealth(b, statsFor(b.id))] ||
+      (a.dueDate ?? "9999").localeCompare(b.dueDate ?? "9999"),
+    deadline: (a, b) => (a.dueDate ?? "9999").localeCompare(b.dueDate ?? "9999"),
+    progress: (a, b) => progress(b) - progress(a),
+    updated: (a, b) => (b.updatedAt ?? "").localeCompare(a.updatedAt ?? ""),
+    name: (a, b) => a.title.localeCompare(b.title),
   };
 
   const q = query.trim().toLowerCase();
-  const displayed = projects.filter(
-    (p) =>
-      (activeTab === "Archived" ? p.status === "ARCHIVED" : p.status !== "ARCHIVED") &&
-      (!q || p.title.toLowerCase().includes(q) || p.description?.toLowerCase().includes(q))
-  );
+  const displayed = projects
+    .filter((p) => inTab[activeTab](p) && (!q || p.title.toLowerCase().includes(q) || p.description?.toLowerCase().includes(q)))
+    .sort(compare[sort]);
 
   return (
-    <PageContainer className="gap-4">
+    <PageContainer className="gap-5">
+      {!isLoading && projects.length > 0 && <ProjectsOverview projects={projects} statsFor={statsFor} />}
+
       {/* Toolbar: segmented tabs + filter */}
       <div className="flex flex-wrap items-center gap-2">
         <div role="tablist" className="flex h-9 rounded-lg border border-border bg-card/60 p-0.5">
@@ -146,6 +177,16 @@ const Projects = () => {
         </div>
 
         <div className="ml-auto flex w-full items-center gap-2 sm:w-auto">
+        <InlinePicker
+          label="sort order"
+          value={sort}
+          options={SORTS}
+          onChange={setSort}
+          triggerClassName="flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-border bg-card/60 px-2.5 text-xs font-medium text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <ArrowUpDown className="h-3.5 w-3.5" />
+          <span className="hidden md:inline">{SORTS.find((x) => x.value === sort)?.label}</span>
+        </InlinePicker>
         <label className="relative flex-1 sm:w-64 sm:flex-none">
           <span className="sr-only">Filter projects</span>
           <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -204,7 +245,7 @@ const Projects = () => {
               <ProjectCard
                 key={project.id}
                 project={project}
-                stats={taskStats(tasksByProject.get(project.id))}
+                stats={statsFor(project.id)}
                 onDelete={handleDelete}
                 onArchive={handleArchive}
                 onUnarchive={handleUnarchive}
@@ -218,7 +259,7 @@ const Projects = () => {
               <ProjectRow
                 key={project.id}
                 project={project}
-                stats={taskStats(tasksByProject.get(project.id))}
+                stats={statsFor(project.id)}
                 onDelete={handleDelete}
                 onArchive={handleArchive}
                 onUnarchive={handleUnarchive}
@@ -235,14 +276,18 @@ const Projects = () => {
                 ? `No projects match "${query.trim()}"`
                 : activeTab === "Archived"
                   ? "No archived projects"
-                  : "No projects yet"}
+                  : activeTab === "Completed"
+                    ? "Nothing completed yet"
+                    : "No active projects"}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
               {q
                 ? "Try a different name, or check the other tab."
                 : activeTab === "Archived"
                   ? "Projects you archive from the card menu end up here."
-                  : "Create one to start tracking tasks and deadlines."}
+                  : activeTab === "Completed"
+                    ? "Mark a project as completed from its page and it moves here."
+                    : "Create one to start tracking tasks and deadlines."}
             </p>
           </div>
           {!q && activeTab === "Active" && (
