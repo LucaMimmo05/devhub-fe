@@ -51,7 +51,6 @@ type NavItem = {
   count?: number;
   /** Shows a red dot next to the count (e.g. overdue tasks). */
   alert?: boolean;
-  soon?: boolean;
 };
 
 const NavGroup = ({ label, items, onNavigate }: { label: string; items: NavItem[]; onNavigate: () => void }) => {
@@ -72,11 +71,7 @@ const NavGroup = ({ label, items, onNavigate }: { label: string; items: NavItem[
                     <span>{item.title}</span>
                   </NavLink>
                 </SidebarMenuButton>
-                {item.soon ? (
-                  <SidebarMenuBadge className="right-1.5 rounded border border-border px-1 text-[10px] font-medium text-muted-foreground">
-                    Soon
-                  </SidebarMenuBadge>
-                ) : item.count !== undefined && item.count > 0 ? (
+                {item.count !== undefined && item.count > 0 ? (
                   <SidebarMenuBadge className="right-1.5 gap-1 text-[11px] text-muted-foreground">
                     {item.alert && <span className="h-1.5 w-1.5 rounded-full bg-red-400" aria-label="Has overdue items" />}
                     {item.count}
@@ -123,7 +118,7 @@ const AppSidebar = ({ onSearch }: { onSearch: () => void }) => {
   const tools: NavItem[] = [
     { title: "Notes", url: "/notes", icon: StickyNote, count: notes?.length },
     { title: "Commands", url: "/commands", icon: Command, count: commands?.length },
-    { title: "GitHub", url: "/github", icon: GitBranch, soon: true },
+    { title: "GitHub", url: "/github", icon: GitBranch },
   ];
 
   const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(" ") || user?.username || "Account";

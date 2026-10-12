@@ -9,6 +9,9 @@ import { useAuth } from "@/context/AuthContext";
 import { deleteMyAccount, getMyProfile, updateMyProfile, type MyProfile } from "@/services/userService";
 import { resetPassword, sendPasswordCode } from "@/services/authService";
 import { cn } from "@/lib/utils";
+import { SiGithub } from "react-icons/si";
+import ConnectGithubCard from "@/components/github/ConnectGithubCard";
+import { useDisconnectGithub, useGithubStatus } from "@/hooks/queries/useGithub";
 import { toast } from "sonner";
 
 const ME_KEY = ["users", "me"] as const;
@@ -317,6 +320,44 @@ const PreferencesSection = () => {
   );
 };
 
+const GithubAccountRow = () => {
+  const { data: status, isLoading } = useGithubStatus();
+  const disconnect = useDisconnectGithub();
+  if (isLoading) return <div className="h-14 animate-pulse rounded-xl bg-primary/10" />;
+  return (
+    <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card/60 p-4">
+      {status?.connected && status.avatarUrl ? (
+        <img src={status.avatarUrl} alt="" className="h-9 w-9 rounded-full" />
+      ) : (
+        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-muted"><SiGithub className="h-4.5 w-4.5" /></span>
+      )}
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium">GitHub</p>
+        <p className="truncate text-xs text-muted-foreground">
+          {status?.connected ? `Connected as @${status.login}` : status?.configured ? "Not connected" : "Not available on this server"}
+        </p>
+      </div>
+      {status?.connected ? (
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={disconnect.isPending}
+          onClick={() =>
+            disconnect.mutate(undefined, {
+              onSuccess: () => toast.success("GitHub disconnected"),
+              onError: (err) => toast.error(errorMessage(err, "Couldn't disconnect GitHub.")),
+            })
+          }
+        >
+          Disconnect
+        </Button>
+      ) : status?.configured ? (
+        <ConnectGithubCard configured compact />
+      ) : null}
+    </div>
+  );
+};
+
 const DangerSection = ({ username }: { username: string }) => {
   const navigate = useNavigate();
   const { logout } = useAuth();
@@ -402,6 +443,10 @@ const Settings = () => {
 
         <Section title="Password" description="Change it any time. We confirm by email first, so nobody at your keyboard can do it for you.">
           <PasswordSection email={profile?.email} />
+        </Section>
+
+        <Section title="Connected accounts" description="Sign in with GitHub and bring its repositories into your projects.">
+          <GithubAccountRow />
         </Section>
 
         <Section title="Preferences" description="Small defaults that make the app work the way you like.">
