@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { differenceInCalendarDays, format, parseISO } from "date-fns";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { Eye, Loader2, Pencil, Trash2, X } from "lucide-react";
 import { queryKeys } from "@/hooks/queries/keys";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -13,14 +14,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import PriorityBadge from "@/components/ui/PriorityBadge";
-import MetaField from "@/components/ui/MetaField";
-import { Loader2, Trash2, Calendar, User, Tag, AlertCircle, Pencil } from "lucide-react";
+import SegmentedPicker from "@/components/ui/SegmentedPicker";
+import { PRIORITY_SEGMENTS, STATUS_SEGMENTS } from "@/components/projects/projectUtils";
 import { updateTask, deleteTask } from "@/services/taskService";
+import { fromDateInput, toDateInput } from "@/utils/dates";
 import type { TaskType } from "@/types/taskType";
 import type { Priority, Status } from "@/types/PriorityAndStatusType";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 type AssignableMember = {
   profileId: string;
@@ -40,18 +41,6 @@ type Props = {
   canEdit?: boolean;
 };
 
-const statusLabel: Record<string, string> = {
-  PENDING: "Pending",
-  IN_PROGRESS: "In Progress",
-  COMPLETED: "Completed",
-};
-
-const priorityLabel: Record<string, string> = {
-  LOW: "Low",
-  MEDIUM: "Medium",
-  HIGH: "High",
-};
-
 const proseClass = [
   "prose prose-sm dark:prose-invert max-w-none text-sm text-foreground",
   "[&_h1]:text-xl [&_h1]:font-bold [&_h1]:mb-2 [&_h1]:mt-3",
@@ -68,292 +57,298 @@ const proseClass = [
   "[&_hr]:border-border [&_hr]:my-3",
 ].join(" ");
 
-const formatDate = (d?: string) => {
-  if (!d) return null;
-  return new Date(d).toLocaleDateString("en-GB", {
-    day: "2-digit", month: "short", year: "numeric",
-  });
+const fieldLabel = "text-xs font-medium text-muted-foreground";
+
+const relDays = (value: string) => {
+  const days = differenceInCalendarDays(parseISO(value), new Date());
+  if (days === 0) return { text: "today", late: false };
+  if (days === 1) return { text: "tomorrow", late: false };
+  if (days < 0) return { text: `${-days}d late`, late: true };
+  return { text: `in ${days}d`, late: false };
 };
 
-const TaskModal = ({
-  task,
-  onClose,
-  onSaved,
-  onDeleted,
-  members,
-  canAssign,
-  canEdit = true,
-}: Props) => {
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [priority, setPriority] = useState<Priority>("MEDIUM");
-  const [status, setStatus] = useState<Status>("PENDING");
-  const [dueDate, setDueDate] = useState("");
-  const [assignedToProfileId, setAssignedToProfileId] = useState("");
+type Draft = {
+  title: string;
+  description: string;
+  status: Status;
+  priority: Priority;
+  dueDate: string;
+  assignedToProfileId: string;
+};
+
+const draftFrom = (task: TaskType): Draft => ({
+  title: task.title,
+  description: task.description ?? "",
+  status: task.status,
+  priority: task.priority,
+  dueDate: toDateInput(task.dueDate),
+  assignedToProfileId: task.assignedToProfileId ?? "",
+});
+
+// Task details, editable in place: no separate view/edit modes. Save appears once something changed.
+const TaskModal = ({ task, onClose, onSaved, onDeleted, members, canAssign, canEdit = true }: Props) => {
+  const queryClient = useQueryClient();
+  const [draft, setDraft] = useState<Draft | null>(null);
+  const [editingDescription, setEditingDescription] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [editMode, setEditMode] = useState(false);
-  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (task) {
-      setTitle(task.title);
-      setDescription(task.description ?? "");
-      setPriority(task.priority);
-      setStatus(task.status);
-      setDueDate(task.dueDate ? task.dueDate.split("T")[0] : "");
-      setAssignedToProfileId(task.assignedToProfileId ?? "");
+      setDraft(draftFrom(task));
+      setEditingDescription(false);
       setConfirmDelete(false);
-      setEditMode(false); // always start in view mode
     }
   }, [task]);
 
-  const enterEdit = () => setEditMode(true);
+  if (!task || !draft) {
+    return <Dialog open={false} />;
+  }
 
-  const cancelEdit = () => {
-    // reset form to original task values
-    if (task) {
-      setTitle(task.title);
-      setDescription(task.description ?? "");
-      setPriority(task.priority);
-      setStatus(task.status);
-      setDueDate(task.dueDate ? task.dueDate.split("T")[0] : "");
-      setAssignedToProfileId(task.assignedToProfileId ?? "");
-    }
-    setConfirmDelete(false);
-    setEditMode(false);
-  };
-
-  const isEditing = canEdit && editMode;
+  const original = draftFrom(task);
+  const dirty = (Object.keys(original) as (keyof Draft)[]).some((k) => original[k] !== draft[k]);
+  const set = <K extends keyof Draft>(key: K, value: Draft[K]) => setDraft((d) => (d ? { ...d, [key]: value } : d));
+  const due = draft.dueDate ? relDays(draft.dueDate) : null;
 
   const handleSave = async () => {
-    if (!task || !title.trim()) return;
+    if (!draft.title.trim()) return;
     setSaving(true);
     try {
       const updated = await updateTask(task.id, {
-        title,
-        description: description || undefined,
-        status,
-        priority,
-        dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
-        assignedToProfileId: canAssign && assignedToProfileId ? assignedToProfileId : undefined,
+        title: draft.title.trim(),
+        description: draft.description,
+        status: draft.status,
+        priority: draft.priority,
+        dueDate: fromDateInput(draft.dueDate),
+        clearDueDate: !draft.dueDate && !!original.dueDate,
+        assignedToProfileId: canAssign && draft.assignedToProfileId ? draft.assignedToProfileId : undefined,
       });
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
       onSaved(updated);
-      setEditMode(false);
-    } catch (err) {
-      console.error(err);
+      toast.success("Task saved");
+      onClose();
+    } catch {
+      toast.error("Couldn't save the task. Please try again.");
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!task) return;
     setDeleting(true);
     try {
       await deleteTask(task.id);
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
       onDeleted?.(task.id);
+      toast.success("Task deleted");
       onClose();
-    } catch (err) {
-      console.error(err);
+    } catch {
+      toast.error("Couldn't delete the task.");
     } finally {
       setDeleting(false);
     }
   };
 
-  return (
-    <Dialog open={!!task} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-3xl p-0 gap-0 flex flex-col max-h-[88vh] overflow-hidden">
+  const assignee = members?.find((m) => m.profileId === draft.assignedToProfileId);
 
-        {/* ── Header ── */}
-        <div className="px-6 pt-5 pb-4 border-b shrink-0">
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent
+        className="flex max-h-[90dvh] w-[calc(100%-2rem)] max-w-2xl flex-col gap-0 overflow-hidden p-0"
+        // Focus the dialog itself rather than selecting the whole title, which one keystroke would overwrite.
+        onOpenAutoFocus={(e) => {
+          e.preventDefault();
+          (e.currentTarget as HTMLElement | null)?.focus();
+        }}
+      >
+        {/* Title */}
+        <div className="shrink-0 px-5 pb-4 pt-5 pr-12 sm:px-6">
+          <DialogDescription className="mb-1.5 text-xs">
+            {task.projectTitle ? <>Task in <span className="font-medium text-foreground">{task.projectTitle}</span></> : "Task"}
+          </DialogDescription>
           <DialogTitle asChild>
-            {isEditing ? (
-              <input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="w-full text-xl font-semibold bg-transparent border-none outline-none placeholder:text-muted-foreground/40 mb-2"
+            {canEdit ? (
+              // Grows with the text so long titles wrap instead of scrolling sideways on phones.
+              <textarea
+                value={draft.title}
+                onChange={(e) => set("title", e.target.value.replace(/\n/g, " "))}
+                onKeyDown={(e) => { if (e.key === "Enter") e.preventDefault(); }}
+                rows={1}
+                maxLength={100}
+                aria-label="Task title"
+                className="-mx-2 w-[calc(100%+1rem)] resize-none rounded-md bg-transparent px-2 py-1 text-xl font-semibold leading-snug tracking-tight outline-none transition-colors field-sizing-content placeholder:text-muted-foreground/40 hover:bg-muted/40 focus:bg-muted/50"
                 placeholder="Task title"
               />
             ) : (
-              <h2 className="text-xl font-semibold mb-2">{title}</h2>
+              <h2 className="text-xl font-semibold tracking-tight">{draft.title}</h2>
             )}
           </DialogTitle>
-          <div className="flex items-center gap-2 flex-wrap">
-            <PriorityBadge data={status}>{statusLabel[status] ?? status}</PriorityBadge>
-            <PriorityBadge data={priority}>{priorityLabel[priority] ?? priority}</PriorityBadge>
-            {task?.projectTitle && (
-              <span className="text-xs text-muted-foreground">
-                in <span className="font-medium text-foreground">{task.projectTitle}</span>
-              </span>
-            )}
-          </div>
         </div>
 
-        {/* ── Body ── */}
-        <div className="flex flex-1 min-h-0 overflow-hidden">
-
-          {/* Left — description */}
-          <div className="flex-1 flex flex-col px-6 py-5 overflow-y-auto border-r min-w-0">
-            <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3 block">
-              Description
-            </Label>
-
-            {isEditing ? (
-              <Textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Add a description… (supports Markdown)"
-                className="flex-1 resize-none text-sm font-mono min-h-[200px]"
+        <div className="flex-1 overflow-y-auto border-t border-border/60">
+          {/* Properties */}
+          <div className="grid grid-cols-1 gap-x-6 gap-y-4 px-5 py-5 sm:grid-cols-2 sm:px-6">
+            <div className="flex flex-col gap-1.5">
+              <span className={fieldLabel}>Status</span>
+              <SegmentedPicker
+                aria-label="Status"
+                options={STATUS_SEGMENTS}
+                value={draft.status === "ARCHIVED" ? "PENDING" : draft.status}
+                onChange={(v) => set("status", v)}
+                disabled={!canEdit}
               />
-            ) : (
-              <div className={proseClass}>
-                {description
-                  ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{description}</ReactMarkdown>
-                  : <p className="text-muted-foreground italic text-sm">No description.</p>
-                }
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <span className={fieldLabel}>Priority</span>
+              <SegmentedPicker
+                aria-label="Priority"
+                options={PRIORITY_SEGMENTS}
+                value={draft.priority}
+                onChange={(v) => set("priority", v)}
+                disabled={!canEdit}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="task-due" className={fieldLabel}>Due date</label>
+              <div className="flex items-center gap-2.5">
+                <input
+                  id="task-due"
+                  type="date"
+                  value={draft.dueDate}
+                  onChange={(e) => set("dueDate", e.target.value)}
+                  disabled={!canEdit}
+                  className="h-8 rounded-lg border border-border bg-background/40 px-2.5 text-sm scheme-dark focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-60"
+                />
+                {due && (
+                  <span className={cn("text-xs tabular-nums", due.late && draft.status !== "COMPLETED" ? "font-medium text-red-400" : "text-muted-foreground")}>
+                    {due.text}
+                  </span>
+                )}
+                {canEdit && draft.dueDate && (
+                  <button
+                    type="button"
+                    onClick={() => set("dueDate", "")}
+                    aria-label="Remove due date"
+                    title="Remove due date"
+                    className="ml-auto rounded-md p-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
               </div>
-            )}
-          </div>
-
-          {/* Right — metadata */}
-          <div className="w-52 shrink-0 flex flex-col gap-5 px-5 py-5 overflow-y-auto bg-muted/30">
-
-            <MetaField icon={Tag} label="Status">
-              {isEditing ? (
-                <Select value={status} onValueChange={(v) => setStatus(v as Status)}>
-                  <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="PENDING">Pending</SelectItem>
-                    <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                    <SelectItem value="COMPLETED">Completed</SelectItem>
-                  </SelectContent>
-                </Select>
-              ) : (
-                <PriorityBadge data={status} className="w-fit">{statusLabel[status]}</PriorityBadge>
-              )}
-            </MetaField>
-
-            <MetaField icon={AlertCircle} label="Priority">
-              {isEditing ? (
-                <Select value={priority} onValueChange={(v) => setPriority(v as Priority)}>
-                  <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="LOW">Low</SelectItem>
-                    <SelectItem value="MEDIUM">Medium</SelectItem>
-                    <SelectItem value="HIGH">High</SelectItem>
-                  </SelectContent>
-                </Select>
-              ) : (
-                <PriorityBadge data={priority} className="w-fit">{priorityLabel[priority]}</PriorityBadge>
-              )}
-            </MetaField>
-
-            {isEditing && canAssign && members && members.length > 0 ? (
-              <MetaField icon={User} label="Assignee">
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <span className={fieldLabel}>Assignee</span>
+              {canEdit && canAssign && members && members.length > 0 ? (
                 <Select
-                  value={assignedToProfileId || "none"}
-                  onValueChange={(v) => setAssignedToProfileId(v === "none" ? "" : v)}
+                  value={draft.assignedToProfileId || "none"}
+                  onValueChange={(v) => set("assignedToProfileId", v === "none" ? "" : v)}
                 >
-                  <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Unassigned" /></SelectTrigger>
+                  <SelectTrigger className="h-8 rounded-lg bg-background/40 text-sm" aria-label="Assignee">
+                    <SelectValue placeholder="Unassigned" />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">Unassigned</SelectItem>
                     {members.map((m) => (
                       <SelectItem key={m.profileId} value={m.profileId}>
-                        {m.firstName && m.lastName ? `${m.firstName} ${m.lastName}` : m.username}
+                        {m.firstName && m.lastName ? `${m.firstName} ${m.lastName}` : `@${m.username}`}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-              </MetaField>
-            ) : task?.assignedToUsername ? (
-              <MetaField icon={User} label="Assignee">
-                <span className="text-sm">@{task.assignedToUsername}</span>
-              </MetaField>
-            ) : null}
-
-            <MetaField icon={Calendar} label="Due Date">
-              {isEditing ? (
-                <Input
-                  type="date"
-                  value={dueDate}
-                  onChange={(e) => setDueDate(e.target.value)}
-                  className="h-8 text-sm"
-                />
               ) : (
-                <span className="text-sm">
-                  {dueDate ? formatDate(dueDate) : <span className="text-muted-foreground italic">—</span>}
+                <span className="flex h-8 items-center text-sm">
+                  {assignee?.username ?? task.assignedToUsername
+                    ? `@${assignee?.username ?? task.assignedToUsername}`
+                    : <span className="text-muted-foreground">Unassigned</span>}
                 </span>
-              )}
-            </MetaField>
-
-            {/* Timestamps */}
-            <div className="mt-auto pt-4 border-t flex flex-col gap-2">
-              {task?.createdAt && (
-                <div>
-                  <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wide">Created</p>
-                  <p className="text-xs text-muted-foreground">{formatDate(task.createdAt)}</p>
-                </div>
-              )}
-              {task?.updatedAt && (
-                <div>
-                  <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wide">Updated</p>
-                  <p className="text-xs text-muted-foreground">{formatDate(task.updatedAt)}</p>
-                </div>
               )}
             </div>
           </div>
+
+          {/* Description */}
+          <div className="border-t border-border/60 px-5 py-5 sm:px-6">
+            <div className="mb-2.5 flex items-center justify-between">
+              <span className={fieldLabel}>Description</span>
+              {canEdit && (
+                <button
+                  type="button"
+                  onClick={() => setEditingDescription((v) => !v)}
+                  className="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  {editingDescription ? <><Eye className="h-3 w-3" /> Preview</> : <><Pencil className="h-3 w-3" /> Edit</>}
+                </button>
+              )}
+            </div>
+            {editingDescription ? (
+              <textarea
+                value={draft.description}
+                onChange={(e) => set("description", e.target.value)}
+                placeholder="Add details, links, checklists… Markdown supported."
+                maxLength={500}
+                autoFocus
+                className="min-h-40 w-full resize-y rounded-lg border border-border bg-background/40 p-3 font-mono text-sm leading-relaxed outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              />
+            ) : draft.description ? (
+              <div className={proseClass}>
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{draft.description}</ReactMarkdown>
+              </div>
+            ) : canEdit ? (
+              <button
+                type="button"
+                onClick={() => setEditingDescription(true)}
+                className="w-full rounded-lg border border-dashed border-border px-3 py-4 text-left text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
+              >
+                Add a description…
+              </button>
+            ) : (
+              <p className="text-sm text-muted-foreground">No description.</p>
+            )}
+          </div>
         </div>
 
-        {/* ── Footer ── */}
-        <div className="px-6 py-3.5 border-t flex items-center justify-between shrink-0">
-          {/* Left: delete actions (only in edit mode) */}
-          <div className="flex items-center gap-2">
-            {isEditing && !confirmDelete && (
+        {/* Footer */}
+        <div className="flex shrink-0 items-center justify-between gap-2 border-t border-border/60 px-5 py-3 sm:px-6">
+          <div className="flex min-w-0 items-center gap-2">
+            {canEdit && !confirmDelete && (
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-destructive hover:text-destructive hover:bg-destructive/10 gap-1.5"
+                className="gap-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                 onClick={() => setConfirmDelete(true)}
               >
                 <Trash2 className="h-3.5 w-3.5" /> Delete
               </Button>
             )}
-            {isEditing && confirmDelete && (
+            {canEdit && confirmDelete && (
               <>
-                <span className="text-sm text-destructive">Delete this task?</span>
+                <span className="truncate text-sm text-destructive">Delete this task?</span>
                 <Button size="sm" variant="destructive" onClick={handleDelete} disabled={deleting}>
-                  {deleting ? <Loader2 className="animate-spin h-3.5 w-3.5" /> : "Yes, delete"}
+                  {deleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Delete"}
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => setConfirmDelete(false)}>No</Button>
+                <Button size="sm" variant="ghost" onClick={() => setConfirmDelete(false)}>Keep</Button>
               </>
             )}
+            {!canEdit && (
+              <span className="text-xs text-muted-foreground">
+                Updated {format(new Date(task.updatedAt), "d MMM")}
+              </span>
+            )}
           </div>
-
-          {/* Right: context-aware action buttons */}
-          <div className="flex gap-2">
-            {isEditing ? (
-              <>
-                <Button variant="outline" size="sm" onClick={cancelEdit}>Cancel</Button>
-                <Button size="sm" onClick={handleSave} disabled={saving || !title.trim()}>
-                  {saving && <Loader2 className="animate-spin h-3.5 w-3.5 mr-1" />}
+          {!confirmDelete && (
+            <div className="flex shrink-0 gap-2">
+              <Button variant="ghost" size="sm" onClick={onClose}>
+                {dirty ? "Discard" : "Close"}
+              </Button>
+              {canEdit && (
+                <Button size="sm" onClick={handleSave} disabled={!dirty || saving || !draft.title.trim()}>
+                  {saving && <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />}
                   Save changes
                 </Button>
-              </>
-            ) : (
-              <>
-                <Button variant="outline" size="sm" onClick={onClose}>Close</Button>
-                {canEdit && (
-                  <Button size="sm" onClick={enterEdit} className="gap-1.5">
-                    <Pencil className="h-3.5 w-3.5" /> Edit
-                  </Button>
-                )}
-              </>
-            )}
-          </div>
+              )}
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>
