@@ -36,3 +36,10 @@ export const ago = (iso?: string | null) =>
 
 export const compactNumber = (n: number) =>
   n >= 1000 ? `${(n / 1000).toFixed(n >= 10_000 ? 0 : 1)}k` : String(n);
+
+/** "owner/name" → "name". */
+export const repoName = (fullName: string) => fullName.split("/")[1] ?? fullName;
+
+/** GitHub label colours are hex without "#". */
+export const labelStyle = (color: string | null) =>
+  color ? { borderColor: `#${color}66`, backgroundColor: `#${color}1f`, color: `#${color}` } : undefined;

@@ -10,6 +10,7 @@ import Tasks from "@/pages/Tasks/Tasks";
 import Github from "@/pages/Github/Github";
 import GithubCallback from "@/pages/Github/GithubCallback";
 import GithubRepo from "@/pages/Github/GithubRepo";
+import GithubRepos from "@/pages/Github/GithubRepos";
 import Notes from "@/pages/Notes/Notes";
 import Commands from "@/pages/Commands/Commands";
 import Settings from "@/pages/Settings/Settings";
@@ -97,6 +98,11 @@ const router = createBrowserRouter([
           title: "Tasks",
           header: { showSearch: true, actions: ["add"], createPath: "/tasks/new", createLabel: "New task" },
         } satisfies RouteHandle,
+      },
+      {
+        path: "github/repos",
+        element: <GithubRepos />,
+        handle: { title: "GitHub" } satisfies RouteHandle,
       },
       {
         path: "github/repos/:owner/:name",

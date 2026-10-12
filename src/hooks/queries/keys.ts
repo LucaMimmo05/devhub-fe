@@ -22,6 +22,7 @@ export const queryKeys = {
     repo: (fullName: string) => ["github", "repo", fullName] as const,
     commits: () => ["github", "commits"] as const,
     contributions: () => ["github", "contributions"] as const,
+    inbox: () => ["github", "inbox"] as const,
   },
   commands: {
     all: ["commands"] as const,

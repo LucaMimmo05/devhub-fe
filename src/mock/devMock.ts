@@ -246,8 +246,68 @@ const ghContributions = () => {
     if (!weeks.length) weeks.push({ days: [] });
     weeks[weeks.length - 1].days.push({ date: d.toISOString().slice(0, 10), count, level });
   }
-  return { total, weeks };
+  return {
+    total, weeks,
+    totals: { commits: Math.round(total * 0.71), pullRequests: 64, reviews: 38, issues: 17, privateContributions: Math.round(total * 0.22) },
+    topRepos: [
+      { repo: "lucamimmo/devhub-fe", commits: 412 }, { repo: "lucamimmo/devhub-be", commits: 268 },
+      { repo: "lucamimmo/cli-toolkit", commits: 97 }, { repo: "lucamimmo/billing-service", commits: 61 },
+      { repo: "lucamimmo/portfolio", commits: 23 },
+    ],
+  };
 };
+
+const ghReadme = (repo: { name: string; description: string }) => `# ${repo.name}
+
+${repo.description}.
+
+## Getting started
+
+\`\`\`bash
+pnpm install
+pnpm dev
+\`\`\`
+
+The dev server runs on \`http://localhost:5173\` and talks to the API configured in \`VITE_API_URL\`.
+
+## Features
+
+- Projects with tasks, due dates and a team
+- Markdown notes with emoji
+- A command palette (\`Ctrl K\`) over everything
+- GitHub: inbox, contribution graph, linked repositories
+
+| Script | What it does |
+| --- | --- |
+| \`pnpm build\` | Type-check and build for production |
+| \`pnpm lint\` | ESLint over the whole project |
+
+> Mock mode: append \`?mock\` to any URL to browse with sample data.
+`;
+
+const inboxItem = (kind: "PR" | "ISSUE", number: number, title: string, repo: string, extra: Record<string, unknown> = {}) => ({
+  kind, number, title, repo, htmlUrl: `https://github.com/${repo}/${kind === "PR" ? "pull" : "issues"}/${number}`,
+  authorLogin: "lucamimmo", authorAvatarUrl: null, labels: [], comments: 0, draft: false, reviewDecision: null,
+  checks: null, additions: 0, deletions: 0, createdAt: at(-2), updatedAt: at(0, 8), ...extra,
+});
+
+const ghInbox = () => ({
+  reviewRequests: [
+    inboxItem("PR", 44, "fix(auth): refresh token rotation on concurrent tabs", "lucamimmo/devhub-be", { authorLogin: "giulia-r", reviewDecision: "REVIEW_REQUIRED", checks: "SUCCESS", additions: 86, deletions: 31, comments: 3, updatedAt: at(0, 9) }),
+    inboxItem("PR", 19, "Add retry with backoff to the webhook consumer", "lucamimmo/billing-service", { authorLogin: "tkowalski", reviewDecision: "REVIEW_REQUIRED", checks: "PENDING", additions: 142, deletions: 12, updatedAt: at(-1, 16) }),
+  ],
+  pullRequests: [
+    inboxItem("PR", 41, "feat: GitHub integration", "lucamimmo/devhub-fe", { reviewDecision: "APPROVED", checks: "SUCCESS", additions: 1840, deletions: 312, comments: 5, labels: [{ name: "feature", color: "0e8a16" }], updatedAt: at(0, 11) }),
+    inboxItem("PR", 17, "chore: bump Quarkus to 3.30", "lucamimmo/devhub-be", { reviewDecision: "CHANGES_REQUESTED", checks: "FAILURE", additions: 24, deletions: 24, comments: 2, updatedAt: at(-1, 10) }),
+    inboxItem("PR", 9, "WIP: subcommand for bulk renames", "lucamimmo/cli-toolkit", { draft: true, checks: "PENDING", additions: 210, deletions: 4, updatedAt: at(-4) }),
+    inboxItem("PR", 39, "refactor(notes): extract the autosave queue", "lucamimmo/devhub-fe", { reviewDecision: "REVIEW_REQUIRED", checks: "SUCCESS", additions: 133, deletions: 97, updatedAt: at(-5) }),
+    inboxItem("PR", 6, "Astro 5 upgrade", "lucamimmo/portfolio", { checks: "FAILURE", additions: 58, deletions: 41, comments: 1, updatedAt: at(-9) }),
+  ],
+  issues: [
+    inboxItem("ISSUE", 40, "Dark mode flicker on first load", "lucamimmo/devhub-fe", { authorLogin: "giulia-r", labels: [{ name: "bug", color: "d73a4a" }], comments: 2, updatedAt: at(0, 7) }),
+    inboxItem("ISSUE", 12, "Invoices: PDF totals rounded twice", "lucamimmo/billing-service", { authorLogin: "amara-o", labels: [{ name: "bug", color: "d73a4a" }, { name: "billing", color: "fbca04" }], comments: 6, updatedAt: at(-2) }),
+  ],
+});
 
 const githubRoute = (method: string, seg: string[]): [number, unknown] | null => {
   if (seg[0] === "auth" && seg[1] === "github") return [503, { message: "Mock mode: GitHub sign-in needs a real OAuth app." }];
@@ -273,15 +333,31 @@ const githubRoute = (method: string, seg: string[]): [number, unknown] | null =>
         comments: i * 2, createdAt: at(-(i + 1) * 4), updatedAt: at(-i), htmlUrl: `${repo.htmlUrl}/issues/${40 - i * 3}`,
       })),
       pulls: repo.openIssues > 1 ? [
-        { number: 41, title: "feat: GitHub integration", authorLogin: "lucamimmo", authorAvatarUrl: null, draft: false, createdAt: at(0, 9), htmlUrl: `${repo.htmlUrl}/pull/41` },
-        { number: 38, title: "WIP: move settings into tabs", authorLogin: "giulia-r", authorAvatarUrl: null, draft: true, createdAt: at(-5), htmlUrl: `${repo.htmlUrl}/pull/38` },
+        { number: 41, title: "feat: GitHub integration", authorLogin: "lucamimmo", authorAvatarUrl: null, draft: false, branch: "feat/github-integration", labels: [{ name: "feature", color: "0e8a16" }], createdAt: at(-1, 9), updatedAt: at(0, 9), htmlUrl: `${repo.htmlUrl}/pull/41` },
+        { number: 38, title: "WIP: move settings into tabs", authorLogin: "giulia-r", authorAvatarUrl: null, draft: true, branch: "settings-tabs", labels: [], createdAt: at(-5), updatedAt: at(-2), htmlUrl: `${repo.htmlUrl}/pull/38` },
       ] : [],
+      readme: repo.id === 6 ? null : ghReadme(repo),
+      latestRelease: repo.id <= 4 ? { tag: `v1.${repo.id + 3}.0`, name: `v1.${repo.id + 3}.0`, publishedAt: at(-6 - repo.id), htmlUrl: `${repo.htmlUrl}/releases` } : null,
+      runs: repo.id <= 3 ? [
+        { id: 5, name: "CI", title: "feat(github): connect accounts with OAuth", status: "in_progress", conclusion: null, branch: "main", event: "push", createdAt: at(0, 11), htmlUrl: `${repo.htmlUrl}/actions` },
+        { id: 4, name: "CI", title: "fix(notes): flush pending edits before closing", status: "completed", conclusion: "success", branch: "main", event: "push", createdAt: at(0, 8), htmlUrl: `${repo.htmlUrl}/actions` },
+        { id: 3, name: "CI", title: "chore: bump Quarkus to 3.30", status: "completed", conclusion: "failure", branch: "chore/quarkus", event: "pull_request", createdAt: at(-1, 10), htmlUrl: `${repo.htmlUrl}/actions` },
+        { id: 2, name: "Deploy", title: "refactor(tasks): share TaskRow between pages", status: "completed", conclusion: "success", branch: "main", event: "push", createdAt: at(-1, 9), htmlUrl: `${repo.htmlUrl}/actions` },
+      ] : [],
+      contributors: [
+        { login: "lucamimmo", avatarUrl: null, contributions: 412 },
+        { login: "giulia-r", avatarUrl: null, contributions: 57 },
+        { login: "tkowalski", avatarUrl: null, contributions: 21 },
+        { login: "amara-o", avatarUrl: null, contributions: 6 },
+      ].slice(0, repo.id <= 2 ? 4 : 1),
+      weeklyCommits: Array.from({ length: 52 }, (_, i) => Math.max(0, Math.round(Math.sin(i / 4 + repo.id) * 6 + (i > 40 ? 9 : 4)))),
     }];
   }
   if (seg[1] === "repos") return [200, ghRepos];
   if (seg[1] === "commits") return [200, [...ghCommits("lucamimmo/devhub-fe", 8), ...ghCommits("lucamimmo/devhub-be", 5, 3), ...ghCommits("lucamimmo/cli-toolkit", 3, 9)]
     .sort((a, b) => b.date.localeCompare(a.date))];
   if (seg[1] === "contributions") return [200, ghContributions()];
+  if (seg[1] === "inbox") return [200, ghInbox()];
   return null;
 };
 
