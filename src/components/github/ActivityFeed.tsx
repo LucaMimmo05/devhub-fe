@@ -4,7 +4,7 @@ import { format, isToday, isYesterday, parseISO } from "date-fns";
 import { GitCommitHorizontal } from "lucide-react";
 import type { GithubCommit } from "@/types/githubType";
 import { ago, repoName } from "./githubUtils";
-import ShowMoreButton from "./ShowMoreButton";
+import ShowMoreButton from "@/components/ui/ShowMoreButton";
 
 const dayLabel = (iso: string | null) => {
   if (!iso) return "Earlier";

@@ -19,7 +19,7 @@ import { apiErrorMessage } from "@/utils/githubAuth";
 import type { GithubInboxItem } from "@/types/githubType";
 import type { ProjectType } from "@/types/projectType";
 import { ago, labelStyle, repoName } from "./githubUtils";
-import ShowMoreButton from "./ShowMoreButton";
+import ShowMoreButton from "@/components/ui/ShowMoreButton";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
