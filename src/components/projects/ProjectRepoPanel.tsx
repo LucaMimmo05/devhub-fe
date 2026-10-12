@@ -77,7 +77,8 @@ const ProjectRepoPanel = ({ project, isOwner, onChange }: Props) => {
     <Shell action={unlink}>
       <div className="flex items-center gap-2">
         <Link to={`/github/repos/${fullName}`} className="min-w-0 flex-1 truncate text-sm font-medium hover:text-primary">
-          {fullName}
+          <span className="font-normal text-muted-foreground">{fullName.split("/")[0]}/</span>
+          {fullName.split("/")[1]}
         </Link>
         <a href={`https://github.com/${fullName}`} target="_blank" rel="noopener noreferrer" aria-label="Open on GitHub" className="text-muted-foreground hover:text-foreground">
           <ExternalLink className="h-3.5 w-3.5" />
@@ -104,8 +105,9 @@ const ProjectRepoPanel = ({ project, isOwner, onChange }: Props) => {
               </span>
             )}
             <span className="flex items-center gap-1"><Star className="h-3 w-3" /> {compactNumber(repo.stars)}</span>
-            <span className="flex items-center gap-1"><CircleDot className="h-3 w-3" /> {detail.issues.length}</span>
-            <span className="flex items-center gap-1"><GitPullRequest className="h-3 w-3" /> {detail.pulls.length}</span>
+            <span className="flex items-center gap-1" title="Open issues"><CircleDot className="h-3 w-3" /> {detail.issues.length}</span>
+            <span className="flex items-center gap-1" title="Open pull requests"><GitPullRequest className="h-3 w-3" /> {detail.pulls.length}</span>
+            {repo.pushedAt && <span className="ml-auto tabular-nums">pushed {ago(repo.pushedAt)}</span>}
           </div>
           {detail.commits.length > 0 && (
             <ul className="mt-3 flex flex-col gap-2 border-t border-border/60 pt-3">
@@ -113,7 +115,8 @@ const ProjectRepoPanel = ({ project, isOwner, onChange }: Props) => {
                 <li key={c.sha}>
                   <a href={c.htmlUrl} target="_blank" rel="noopener noreferrer" className="group block">
                     <span className="block truncate text-xs font-medium group-hover:text-primary">{c.message}</span>
-                    <span className="text-[11px] text-muted-foreground">
+                    <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                      <code className="font-mono text-muted-foreground/80">{c.shortSha}</code>
                       {c.authorLogin ?? c.authorName} · {ago(c.date)}
                     </span>
                   </a>

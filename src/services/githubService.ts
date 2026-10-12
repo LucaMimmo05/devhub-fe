@@ -2,6 +2,7 @@ import { mainCallApi } from ".";
 import type {
   GithubCommit,
   GithubContributions,
+  GithubInbox,
   GithubRepo,
   GithubRepoDetail,
   GithubStatus,
@@ -28,3 +29,5 @@ export const getGithubCommits = async (): Promise<GithubCommit[]> => (await main
 
 export const getGithubContributions = async (): Promise<GithubContributions> =>
   (await mainCallApi.get("/github/contributions")).data;
+
+export const getGithubInbox = async (): Promise<GithubInbox> => (await mainCallApi.get("/github/inbox")).data;

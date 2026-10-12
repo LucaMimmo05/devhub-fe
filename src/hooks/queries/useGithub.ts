@@ -3,6 +3,7 @@ import {
   disconnectGithub,
   getGithubCommits,
   getGithubContributions,
+  getGithubInbox,
   getGithubRepo,
   getGithubRepos,
   getGithubStatus,
@@ -40,6 +41,9 @@ export const useGithubContributions = () =>
     enabled: useConnected(),
     staleTime: STALE,
   });
+
+export const useGithubInbox = () =>
+  useQuery({ queryKey: queryKeys.github.inbox(), queryFn: getGithubInbox, enabled: useConnected(), staleTime: STALE });
 
 export const useDisconnectGithub = () => {
   const queryClient = useQueryClient();
