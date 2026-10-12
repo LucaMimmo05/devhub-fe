@@ -22,6 +22,8 @@ export type ProjectType = {
   ownerUsername?: string;
   ownerAvatarUrl?: string;
   members: ProjectMemberSummary[];
+  /** Linked GitHub repository, "owner/name". */
+  githubRepo?: string | null;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -35,6 +37,8 @@ export type ProjectRequest = {
   dueDate?: string;
   /** Updates only: removes the due date (a missing dueDate leaves it unchanged). */
   clearDueDate?: boolean;
+  /** "owner/name" links a repository, "" unlinks it, omitted leaves it unchanged. */
+  githubRepo?: string;
   ownerId: string;
   memberIds?: string[];
 };

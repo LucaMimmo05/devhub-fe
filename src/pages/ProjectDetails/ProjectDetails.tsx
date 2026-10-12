@@ -10,6 +10,7 @@ import ProjectTaskList from "@/components/projects/ProjectTaskList";
 import { InlineDate, InlinePicker, InlineText } from "@/components/projects/InlineEdit";
 import MembersDialog from "@/components/projects/MembersDialog";
 import TeamList from "@/components/projects/TeamList";
+import ProjectRepoPanel from "@/components/projects/ProjectRepoPanel";
 import { ProjectAvatar, ProjectMenu, TaskProgress } from "@/components/projects/projectParts";
 import { priorityLabel, relativeDue, statusLabel, taskStats } from "@/components/projects/projectUtils";
 import { useDeleteProject, useProject, useUpdateProject } from "@/hooks/queries/useProjects";
@@ -276,6 +277,12 @@ const ProjectDetails = () => {
           >
             <TeamList project={project} />
           </Panel>
+
+          <ProjectRepoPanel
+            project={project}
+            isOwner={isOwner}
+            onChange={(githubRepo) => patch({ githubRepo }, githubRepo ? "Repository linked" : "Repository unlinked")}
+          />
         </div>
       </div>
 
