@@ -8,6 +8,8 @@ import Dashboard from "@/pages/Dashboard/Dashboard";
 import Projects from "@/pages/Projects/Projects";
 import Tasks from "@/pages/Tasks/Tasks";
 import Github from "@/pages/Github/Github";
+import GithubCallback from "@/pages/Github/GithubCallback";
+import GithubRepo from "@/pages/Github/GithubRepo";
 import Notes from "@/pages/Notes/Notes";
 import Commands from "@/pages/Commands/Commands";
 import Settings from "@/pages/Settings/Settings";
@@ -97,11 +99,15 @@ const router = createBrowserRouter([
         } satisfies RouteHandle,
       },
       {
+        path: "github/repos/:owner/:name",
+        element: <GithubRepo />,
+        handle: { title: "GitHub" } satisfies RouteHandle,
+      },
+      {
         path: "github",
         element: <Github />,
         handle: {
           title: "GitHub",
-          header: { actions: ["sync"] },
         } satisfies RouteHandle,
       },
       {
@@ -173,6 +179,8 @@ const router = createBrowserRouter([
       </PrivateRoute>
     ),
   },
+  // Public: GitHub redirects here for both "connect" (signed in) and "sign in with GitHub" (not yet).
+  { path: "github/callback", element: <GithubCallback /> },
   { path: "*", element: <NotFound /> },
 ]);
 
