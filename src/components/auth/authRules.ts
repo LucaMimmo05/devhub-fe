@@ -46,6 +46,8 @@ const FRIENDLY: [RegExp, string][] = [
   [/email does not exist/i, "There's no DevHub account with that email."],
   [/email already exists/i, "An account with this email already exists. Sign in instead?"],
   [/username already exists/i, "That username is taken. Try another one."],
+  [/^otp_locked$/i, "Too many wrong codes, so this one no longer works. Send a new code."],
+  [/^too_many_attempts$/i, "Too many attempts. Wait a few minutes and try again."],
 ];
 
 export const friendlyAuthError = (message: string) => FRIENDLY.find(([re]) => re.test(message))?.[1] ?? message;
