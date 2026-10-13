@@ -18,6 +18,8 @@ pnpm preview     # serve the production build locally
 
 There is no test suite/framework configured in this repo — do not assume `pnpm test` exists.
 
+CI (`.github/workflows/ci.yml`) runs `pnpm install --frozen-lockfile`, `pnpm lint` and `pnpm build` on every PR and push to `main`, with Node 22 and the pnpm version pinned by `packageManager` in `package.json`. A dependency change must come with its updated `pnpm-lock.yaml`, or the frozen install fails.
+
 Env vars: copy `.env.example` to `.env.local` and set `VITE_API_URL` to point at the backend.
 
 ## Architecture
