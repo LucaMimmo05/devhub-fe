@@ -6,6 +6,7 @@ import {
   register as registerService,
 } from "@/services/authService";
 import axios from "axios";
+import { toast } from "sonner";
 import { useEffect, useState, useRef, type ReactNode } from "react";
 import {
   AuthContext,
@@ -20,8 +21,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const initialized = useRef(false);
 
   // Stores a session returned by /auth/login or /auth/github.
-  const startSession = (data: { accessToken: string; userProfile?: User }) => {
+  const startSession = (data: { accessToken: string; userProfile?: User; deletionCancelled?: boolean }) => {
     localStorage.setItem("accessToken", data.accessToken);
+    if (data.deletionCancelled) toast.success("Welcome back, your account deletion was cancelled.");
 
     if (data.userProfile) {
       localStorage.setItem("userData", JSON.stringify(data.userProfile));

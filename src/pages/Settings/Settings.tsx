@@ -13,6 +13,7 @@ import { SiGithub } from "react-icons/si";
 import ConnectGithubCard from "@/components/github/ConnectGithubCard";
 import { useDisconnectGithub, useGithubStatus } from "@/hooks/queries/useGithub";
 import { toast } from "sonner";
+import { format } from "date-fns";
 
 const ME_KEY = ["users", "me"] as const;
 const VIEW_KEY = "devhub.projects.view"; // shared with the Projects page
@@ -366,8 +367,8 @@ const DangerSection = ({ username }: { username: string }) => {
 
   const remove = useMutation({
     mutationFn: deleteMyAccount,
-    onSuccess: async () => {
-      toast.success("Your account has been deleted");
+    onSuccess: async ({ deletionScheduledFor }) => {
+      toast.success(`Your account will be deleted on ${format(new Date(deletionScheduledFor), "MMMM d")}. Sign in before then to keep it.`);
       await logout();
       navigate("/auth/login", { replace: true });
     },
@@ -379,7 +380,7 @@ const DangerSection = ({ username }: { username: string }) => {
       <div className="flex flex-col items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4 sm:flex-row sm:items-center">
         <TriangleAlert className="h-5 w-5 shrink-0 text-destructive" />
         <p className="flex-1 text-sm text-muted-foreground">
-          Deletes your account with all your projects, tasks, notes and commands. This can't be undone.
+          Deletes your account with all your projects, tasks, notes and commands after 7 days. Signing in again before then cancels it.
         </p>
         <Button size="sm" variant="destructive" onClick={() => { setTyped(""); setOpen(true); }}>
           Delete account
@@ -391,7 +392,7 @@ const DangerSection = ({ username }: { username: string }) => {
           <DialogHeader>
             <DialogTitle>Delete your account?</DialogTitle>
             <DialogDescription>
-              Everything you own in DevHub is removed for good. Type <span className="font-mono font-medium text-foreground">{username}</span> to confirm.
+              You'll be signed out, and in 7 days everything you own in DevHub is removed for good. Sign in again before then to keep your account. Type <span className="font-mono font-medium text-foreground">{username}</span> to confirm.
             </DialogDescription>
           </DialogHeader>
           <input
@@ -406,7 +407,7 @@ const DangerSection = ({ username }: { username: string }) => {
             <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
             <Button variant="destructive" disabled={typed !== username || remove.isPending} onClick={() => remove.mutate()}>
               {remove.isPending && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
-              Delete everything
+              Delete my account
             </Button>
           </DialogFooter>
         </DialogContent>
