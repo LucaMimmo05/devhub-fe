@@ -482,6 +482,7 @@ const route = (config: InternalAxiosRequestConfig): [number, unknown] => {
   if (seg[0] === "users") {
     if (seg[1] === "search") return [200, members.slice(1).map((m) => ({ ...m, id: m.profileId }))];
     if (method === "put") return [200, { ...user, ...data }];
+    if (method === "delete") return [200, { deletionScheduledFor: new Date(Date.now() + 7 * 86_400_000).toISOString() }];
     return [200, user];
   }
 

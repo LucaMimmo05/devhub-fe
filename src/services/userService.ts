@@ -35,6 +35,8 @@ export const getMyProfile = async (): Promise<MyProfile> => {
 };
 
 /** Permanently deletes the account and everything it owns (projects, tasks, notes, commands). */
-export const deleteMyAccount = async () => {
-  await mainCallApi.delete("/users/me");
+/** Schedules the deletion: the backend purges the account after a grace period unless the user signs in again. */
+export const deleteMyAccount = async (): Promise<{ deletionScheduledFor: string }> => {
+  const response = await mainCallApi.delete("/users/me");
+  return response.data;
 };
