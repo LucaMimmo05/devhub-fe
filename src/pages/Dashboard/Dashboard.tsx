@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, FileText, FolderGit2, Terminal } from "lucide-react";
+import { CheckCircle2, FilePlus2, FileText, FolderGit2, FolderPlus, ListPlus, Terminal } from "lucide-react";
+import { SiGithub } from "react-icons/si";
 import { toast } from "sonner";
 import PageContainer from "@/layouts/PageContainer";
 import { cn } from "@/lib/utils";
@@ -15,13 +16,14 @@ import ProjectPulse from "@/components/dashboard/ProjectPulse";
 import GithubPulse from "@/components/dashboard/GithubPulse";
 import CommandShelf from "@/components/dashboard/CommandShelf";
 import NotesShelf from "@/components/dashboard/NotesShelf";
+import GettingStarted, { type SetupStep } from "@/components/dashboard/GettingStarted";
 import { byUrgency, daysUntil, doneWithin, groupTasks, isOpen, weekAhead } from "@/components/dashboard/dashboardUtils";
 import { useAuth } from "@/context/AuthContext";
 import { useProjects } from "@/hooks/queries/useProjects";
 import { useMyTasks, useToggleTask } from "@/hooks/queries/useTasks";
 import { useNotes } from "@/hooks/queries/useNotes";
 import { useCommands } from "@/hooks/queries/useCommands";
-import { useGithubInbox } from "@/hooks/queries/useGithub";
+import { useGithubInbox, useGithubStatus } from "@/hooks/queries/useGithub";
 import { queryKeys } from "@/hooks/queries/keys";
 import { updateTask } from "@/services/taskService";
 import type { TaskType } from "@/types/taskType";
@@ -43,6 +45,7 @@ const Dashboard = () => {
   const { data: notes, isLoading: notesLoading } = useNotes();
   const { data: commands, isLoading: commandsLoading } = useCommands();
   const { data: inbox } = useGithubInbox();
+  const { data: github } = useGithubStatus();
 
   const open = (tasks ?? []).filter(isOpen).sort(byUrgency);
   const [focus, ...rest] = open;
@@ -58,6 +61,59 @@ const Dashboard = () => {
     return d !== null && d <= 7;
   }).length;
   const reviews = inbox?.reviewRequests.length ?? 0;
+
+  // First steps for a new account, derived from real data; only built once everything has loaded,
+  // so an established account never sees the strip flash in.
+  const setupSteps: SetupStep[] | null =
+    projects && tasks && notes && commands && github
+      ? [
+          {
+            key: "project",
+            title: "Create a project",
+            description: "Group the work, set a deadline and keep an eye on its health.",
+            icon: <FolderPlus />,
+            done: projects.length > 0,
+            cta: { label: "New project", to: "/projects/new" },
+          },
+          {
+            key: "task",
+            title: "Add a task",
+            description: "Break the project into steps with due dates and priorities.",
+            icon: <ListPlus />,
+            done: tasks.length > 0,
+            cta: { label: "New task", to: "/tasks/new" },
+            waitingOn: projects.length === 0 ? "After your first project" : undefined,
+          },
+          ...(github.configured
+            ? [
+                {
+                  key: "github",
+                  title: "Connect GitHub",
+                  description: "Review requests, CI runs and releases next to your tasks.",
+                  icon: <SiGithub />,
+                  done: github.connected,
+                  cta: { label: "Connect", to: "/github" },
+                },
+              ]
+            : []),
+          {
+            key: "command",
+            title: "Save a command",
+            description: "Keep the snippets you always look up one click away.",
+            icon: <Terminal />,
+            done: commands.length > 0,
+            cta: { label: "New command", to: "/commands/new" },
+          },
+          {
+            key: "note",
+            title: "Write a note",
+            description: "Context, decisions and links that belong with your work.",
+            icon: <FilePlus2 />,
+            done: notes.length > 0,
+            cta: { label: "New note", to: "/notes/new" },
+          },
+        ]
+      : null;
 
   const canEdit = (task: TaskType | null) => !!task && !!user && task.createdByProfileId === user.id;
   const toggle = async (task: TaskType) => {
@@ -93,6 +149,8 @@ const Dashboard = () => {
     </>
   ) : open.length > 0 ? (
     `Nothing due today. ${plural(open.length, "open task")} when you're ready.`
+  ) : projects?.length === 0 && tasks?.length === 0 ? (
+    "Welcome to DevHub. Create a project to get started, the rest builds on it."
   ) : (
     "All caught up. Plan something new, or enjoy the quiet."
   );
@@ -111,6 +169,8 @@ const Dashboard = () => {
           { label: "Projects", value: projects?.filter((p) => p.status === "PENDING" || p.status === "IN_PROGRESS").length, to: "/projects" },
         ]}
       />
+
+      {setupSteps && <GettingStarted steps={setupSteps} />}
 
       <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-12">
         {/* Work column */}

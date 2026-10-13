@@ -1,5 +1,5 @@
 // Dev-only mock backend. Open any page with `?mock` to turn it on (persists in
-// localStorage), `?mock=off` to turn it off. Every request made through
+// localStorage), `?mock=new` for a brand-new account with no data, `?mock=off` to turn it off. Every request made through
 // mainCallApi/authApi is answered from the in-memory data below, so the whole
 // app works without a backend or an account. Loaded from main.tsx only when
 // import.meta.env.DEV, so none of this ships in the production build.
@@ -12,6 +12,8 @@ import type { NoteType } from "@/types/noteType";
 import type { CommandType } from "@/types/commandType";
 
 const STORAGE_KEY = "devhubMock";
+/** Stored value for the "new account" scenario: no projects, tasks, notes or commands, GitHub not connected. */
+const MODE_NEW = "new";
 
 const day = 24 * 60 * 60 * 1000;
 const at = (offsetDays: number, hour = 10) => {
@@ -57,7 +59,7 @@ const project = (
   updatedAt: at(-Number(id)),
 });
 
-const projects: ProjectType[] = [
+let projects: ProjectType[] = [
   { ...project("1", "DevHub", "Personal developer dashboard: projects, tasks, notes", "IN_PROGRESS", "HIGH", 18, 3), githubRepo: "lucamimmo/devhub-fe" },
   project("2", "Billing service", "Stripe webhooks and invoice generation for the SaaS", "IN_PROGRESS", "HIGH", 6, 4),
   project("3", "Portfolio v3", "Rewrite in Astro with case studies", "PENDING", "MEDIUM", 41, 1),
@@ -435,7 +437,8 @@ const route = (config: InternalAxiosRequestConfig): [number, unknown] => {
       }
     }
     if (method === "post") {
-      const created = { ...project(String(Date.now()), "", "", "PENDING", "MEDIUM", null, 1), ...data };
+      // The helper derives dates from small numeric ids, so build with "0" and stamp the real id and dates after
+      const created = { ...project("0", "", "", "PENDING", "MEDIUM", null, 1), id: String(Date.now()), createdAt: now, updatedAt: now, ...data };
       projects.unshift(created);
       return [201, created];
     }
@@ -505,9 +508,18 @@ export const setupDevMock = () => {
   const param = new URLSearchParams(window.location.search).get("mock");
   if (param !== null) {
     if (param === "off" || param === "0") localStorage.removeItem(STORAGE_KEY);
-    else localStorage.setItem(STORAGE_KEY, "1");
+    else localStorage.setItem(STORAGE_KEY, param === MODE_NEW ? MODE_NEW : "1");
   }
-  if (localStorage.getItem(STORAGE_KEY) !== "1") return;
+  const mode = localStorage.getItem(STORAGE_KEY);
+  if (mode !== "1" && mode !== MODE_NEW) return;
+
+  if (mode === MODE_NEW) {
+    projects = [];
+    tasks = [];
+    notes = [];
+    commands = [];
+    githubConnected = false;
+  }
 
   mainCallApi.defaults.adapter = mockAdapter;
   authApi.defaults.adapter = mockAdapter;
@@ -515,7 +527,7 @@ export const setupDevMock = () => {
   const badge = document.createElement("a");
   badge.href = "?mock=off";
   badge.title = "Mock data is on. Click to turn it off.";
-  badge.textContent = "Mock data · off";
+  badge.textContent = mode === MODE_NEW ? "Mock data (new account) · off" : "Mock data · off";
   badge.style.cssText =
     "position:fixed;bottom:8px;left:50%;transform:translateX(-50%);z-index:60;font:500 11px/1 system-ui;padding:5px 9px;border-radius:6px;background:oklch(0.55 0.2 265);color:white;text-decoration:none;opacity:.85";
   document.body.appendChild(badge);
