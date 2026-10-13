@@ -2,6 +2,9 @@
 export const PASSWORD_MIN = 8;
 export const USERNAME_MIN = 3;
 export const USERNAME_MAX = 20;
+/** users.email and user_profiles.first_name are varchar(100). */
+export const EMAIL_MAX = 100;
+export const FULL_NAME_MAX = 100;
 export const OTP_LENGTH = 6;
 /** OTPs expire after 5 minutes on the backend (OtpService.OTP_EXPIRATION). */
 export const OTP_TTL_SECONDS = 5 * 60;
