@@ -13,7 +13,7 @@ import {
   SubmitButton,
   TextInput,
 } from "@/components/auth/authParts";
-import { isEmail, PASSWORD_MIN, usernameError, USERNAME_MAX, friendlyAuthError } from "@/components/auth/authRules";
+import { isEmail, PASSWORD_MIN, usernameError, USERNAME_MAX, EMAIL_MAX, FULL_NAME_MAX, friendlyAuthError } from "@/components/auth/authRules";
 import { useAuth } from "@/context/AuthContext";
 import { apiErrorMessage } from "@/utils/githubAuth";
 
@@ -85,6 +85,7 @@ const Register = () => {
               id="fullName"
               autoComplete="name"
               autoFocus
+              maxLength={FULL_NAME_MAX}
               placeholder="Ada Lovelace"
               value={values.fullName}
               invalid={!!shown("fullName")}
@@ -117,6 +118,7 @@ const Register = () => {
             id="email"
             type="email"
             autoComplete="email"
+            maxLength={EMAIL_MAX}
             placeholder="you@example.com"
             value={values.email}
             invalid={!!shown("email")}
